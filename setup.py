@@ -19,6 +19,7 @@ setup(
     author = 'centrum holdings s.r.o',
     author_email='devel@centrumholdings.com',
     license = 'BSD',
+    platform = 'any',
     url='http://github.com/ella/citools/tree/master',
 
     packages = find_packages(
@@ -37,11 +38,16 @@ setup(
         "Programming Language :: Python :: 2.6",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
-#    entry_points = {
-#        'setuptools.file_finders': ['dummy = setuptools_entry:dummylsfiles'],
-#    },
+    entry_points = {
+        'console_scripts': [
+            'citools = citools:main',
+        ],
+        'distutils.commands' : [
+        ],
+    },
     install_requires = [
         'setuptools>=0.6b1',
+        'argparse>=0.9.0',
     ],
 #    setup_requires = [
 #        'setuptools_git',

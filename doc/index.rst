@@ -33,6 +33,24 @@ Testing
 Working with databases
 ----------------------------
 
+Downloading backup::
+
+    [backup]
+    protocol = ftp
+    username = blah
+    password = xxx
+    file = centrum/backup6/tmp/stdout.sql
+
+    [database]
+    name = stdout
+    username = buildbot
+    password = xxx
+
+    citools -c /etc/$project/citools.ini db_restore
+
+when run as setup.py db_restore, /etc/$project/citools.ini is the default
+
+
 ----------------------------
 Distribution and Deployment
 ----------------------------
