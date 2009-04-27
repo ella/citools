@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 __versionstr__ = '0.0.1.0'
 setup(
-    name = 'citools'
+    name = 'citools',
     version = __versionstr__,
     description = 'Coolection of plugins to help with building CI system',
     long_description = '\n'.join((
@@ -19,7 +19,6 @@ setup(
     author = 'centrum holdings s.r.o',
     author_email='devel@centrumholdings.com',
     license = 'BSD',
-    platform = 'any',
     url='http://github.com/ella/citools/tree/master',
 
     packages = find_packages(
@@ -40,7 +39,7 @@ setup(
     ],
     entry_points = {
         'console_scripts': [
-            'citools = citools:main',
+	    'citools = citools.main:main',
         ],
         'distutils.commands' : [
         ],

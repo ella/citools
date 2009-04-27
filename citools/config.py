@@ -17,4 +17,4 @@ class Configuration(object):
         return self.parser.get(*args, **kwargs)
 
 def get_config():
-    return get_init_config()
+    return Configuration()
