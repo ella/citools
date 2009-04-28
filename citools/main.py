@@ -7,11 +7,16 @@ import sys
 from argparse import ArgumentParser
 
 from citools.config import Configuration
+from citools.backup import Backuper
 
 __all__ = ('main',)
 
 def restore_backup(config):
-    pass
+    backuper = Backuper(config)
+    backuper.get_backup()
+    backuper.restore_backup()
+    backuper.clean_backup()
+    return 0
 
 def validate_arguments(config):
     print "Arguments are valid"

@@ -29,4 +29,3 @@ class Configuration(object):
             if key in kwargs and kwargs[key]:
                 section, option = kwargs[key]
                 self.parser.set(section, option)
-

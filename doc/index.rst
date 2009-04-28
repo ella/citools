@@ -36,13 +36,14 @@ Working with databases
 Downloading backup::
 
     [backup]
-    protocol = ftp
+    realm = "backuprealm"
     username = blah
     password = xxx
-    file = centrum/backup6/tmp/stdout.sql
+    file = my/database/backup/db.sql
+    uri = https://my.backup.server.cz/my/dir/backup_archive.tar.gz
 
     [database]
-    name = stdout
+    name = dbname
     username = buildbot
     password = xxx
 
