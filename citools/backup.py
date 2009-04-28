@@ -3,9 +3,12 @@ Tools related to backup handling (download, restore etc.)
 """
 
 import os
+from shutil import rmtree
 import tarfile
 from tempfile import mkdtemp
 import urllib2
+
+from citools.db import Database
 
 class Backuper(object):
     """
@@ -77,7 +80,7 @@ class Backuper(object):
 
         # check & returns
         if sqlfile.endswith(".sql"):
-            return file
+            return sqlfile
         else:
             raise ValueError("After all our backup handling, file %s do not end with sql :-(" % sqlfile)
 
@@ -92,7 +95,12 @@ class Backuper(object):
 
     def clean_backup(self):
         # and delete temporary dir
-        for file in os.listdir(self.tmpdir):
-            os.remove(os.path.join(self.tmpdir, file))
-        os.rmdir(self.tmpdir)
+        rmtree(self.tmpdir)
+#        for file in os.listdir(self.tmpdir):
+#            os.remove(os.path.join(self.tmpdir, file))
+#        os.rmdir(self.tmpdir)
         return 0
+
+    def restore_backup(self):
+        db = Database(config=self.config)
+        return db.execute_script(self.backup_file)
