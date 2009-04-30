@@ -7,6 +7,6 @@ Standards-Version: 3.7.2
 
 Package: centrum-python-citools
 Architecture: all
-Depends: ${python:Depends}, ${misc:Depends}, python-django, python-docutils
+Depends: python (>= 2.5.0), python-setuptools
 Description: Collection of scripts to ease building CI system
 
