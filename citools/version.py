@@ -3,7 +3,6 @@ from distutils.command.config import config
 import re
 import os
 from popen2 import Popen3
-import re
 
 def get_version(string):
     """ Return VERSION tuple, computed from git describe output """
