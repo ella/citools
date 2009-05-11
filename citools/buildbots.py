@@ -30,7 +30,7 @@ class DatabaseBackupRestore(CriticalShellCommand):
             command.append("-c")
             command.append(citools_config)
 
-        super(AptitudeInstall, self).__init__(command=command, **kwargs)
+        super(DatabaseBackupRestore, self).__init__(command=command, **kwargs)
 
 class AptitudeInstall(CriticalShellCommand):
     name = "install package"
