@@ -24,7 +24,7 @@ class DatabaseBackupRestore(CriticalShellCommand):
     descriptionDone = ["backup restored"]
     command = ["citools", "restore_backup"]
 
-    def __init__(self, citools_config, command, **kwargs):
+    def __init__(self, citools_config, command=None, **kwargs):
         if not command:
             command = self.command
             command.append("-c")
@@ -38,7 +38,7 @@ class AptitudeInstall(CriticalShellCommand):
     descriptionDone = ["package installed"]
     command = ["aptitude", "install"]
 
-    def __init__(self, package_name, command, **kwargs):
+    def __init__(self, package_name, command=None, **kwargs):
         if not command:
             command = self.command
             command.append(package_name)
@@ -51,7 +51,7 @@ class DatabaseMigrate(CriticalShellCommand):
     descriptionDone = ["database migrated"]
     command = None
 
-    def __init__(self, manage_command, command, **kwargs):
+    def __init__(self, manage_command, command=None, **kwargs):
         if not command:
             command = [manage_command, "migrate"]
         super(DatabaseMigrate, self).__init__(command=command, **kwargs)
