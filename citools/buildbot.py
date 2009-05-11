@@ -1,16 +1,16 @@
-from buildbot.steps.shell import ShellCommand, Test
+from buildbot.steps import shell
 
 __all__ = (
     "DatabaseBackupRestore", "CriticalTest", "DatabaseBackupRestore",
     "AptitudeInstall", "DatabaseMigrate", "GitSetVersion", "BuildDebianPackage",
 )
 
-class CriticalShellCommand(ShellCommand):
+class CriticalShellCommand(shell.ShellCommand):
     warnOnFailure = 1
     flunkOnFailure = 1
     haltOnFailure = 1
 
-class CriticalTest(Test):
+class CriticalTest(shell.Test):
     name = "test"
     description = ["running tests"]
     descriptionDone = ["tested"]
