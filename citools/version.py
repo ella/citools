@@ -96,7 +96,7 @@ def get_git_head_hash(fix_environment=False, repository_directory=None):
                 del os.environ['GIT_DIR']
 
 
-def update_debianization(self, version):
+def update_debianization(version):
     """
     Update Debian's changelog to current version and append "dummy" message.
     """
@@ -121,9 +121,9 @@ def update_debianization(self, version):
     else:
         raise ValueError("Updating debianization failed with exit code %s" % return_code)
 
-def replace_init(self, version):
+def replace_init(version, name):
     """ Update VERSION attribute in $name/__init__.py module """
-    file = open(os.path.join(self.distribution.get_name(), '__init__.py'), 'r')
+    file = open(os.path.join(name, '__init__.py'), 'r')
     content = replace_version(version=version, source_file=file)
     file.close()
     file = open(file.name, 'wb')
@@ -147,7 +147,7 @@ class GitSetVersion(config):
         try:
             current_git_version = get_git_describe()
             version = get_version(current_git_version)
-            replace_init(version)
+            replace_init(version, self.distribution.get_name())
             update_debianization(version)
             print "Current version is %s" % '.'.join(map(str, version))
         except Exception:
