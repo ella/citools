@@ -140,8 +140,6 @@ class GitSetVersion(config):
     def finalize_options(self):
         pass
 
-
-
     def run(self):
         """ Compute current version for tag and git describe. Expects VERSION variable to be stored in
         $name/__init__.py file (relatively placed to $cwd.) and to be a tuple of three integers.

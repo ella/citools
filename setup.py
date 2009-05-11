@@ -42,7 +42,7 @@ setup(
 	    'citools = citools.main:main',
         ],
         'distutils.commands' : [
-	'compute_version_git = citools.version:GitSetVersion',
+            'compute_version_git = citools.version:GitSetVersion',
         ],
     },
     install_requires = [
