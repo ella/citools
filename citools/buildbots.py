@@ -27,8 +27,7 @@ class DatabaseBackupRestore(CriticalShellCommand):
     def __init__(self, citools_config, command=None, **kwargs):
         if not command:
             command = [i for i in self.command]
-            command.append("-c")
-            command.append(citools_config)
+            command.append("--config=%s" % citools_config)
 
         CriticalShellCommand.__init__(self, command=command, **kwargs)
 
