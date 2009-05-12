@@ -35,11 +35,15 @@ class AptitudeInstall(CriticalShellCommand):
     name = "install package"
     description = ["installing package"]
     descriptionDone = ["package installed"]
-    command = ["aptitude", "install"]
+    command = ["aptitude", "install", "-r", "-y"]
 
-    def __init__(self, package_name, command=None, **kwargs):
+    def __init__(self, package_name, command=None, use_sudo=True, **kwargs):
         if not command:
-            command = [i for i in self.command]
+            if use_sudo:
+                command = ['sudo']
+            else:
+                command = []
+            command += [i for i in self.command]
             command.append(package_name)
         CriticalShellCommand.__init__(self, command=command, **kwargs)
 
