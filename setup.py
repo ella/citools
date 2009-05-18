@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 
 __versionstr__ = '0.0.1.0'
@@ -49,8 +50,5 @@ setup(
         'setuptools>=0.6b1',
         'argparse>=0.9.0',
     ],
-#    setup_requires = [
-#        'setuptools_git',
-#    ],
 )
 
