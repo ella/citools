@@ -7,6 +7,6 @@ Standards-Version: 3.7.2
 
 Package: centrum-python-citools
 Architecture: all
-Depends: python (>= 2.5.0), python-setuptools
+Depends: python (>= 2.5.0), python-setuptools, python-argparse (>= 0.9.0)
 Description: Collection of scripts to ease building CI system
 
