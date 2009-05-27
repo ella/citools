@@ -4,27 +4,40 @@ import re
 import os
 from popen2 import Popen3
 
+"""
+Help us handle continuous versioning. Idea is simple: We have n-number digits
+version (in form 1.2(.3...).n), where number of 1...(n-1) must appear in tag.
+
+n is then computed as number-of-commits since last version-setting tag (and we're
+using git describe for it now)
+"""
+
 def get_version(string):
     """ Return VERSION tuple, computed from git describe output """
-    match = re.match(".*(?P<schema_version>\d+\.\d+).*", string)
+    match = re.match("[^0-9]*(?P<arch>\d\.\d{1})(?P<staging>\.\d)*.*", string)
 
-    if not match or not match.groupdict().has_key('schema_version'):
-        raise ValueError(u"No schema version identified")
+    if not match or not match.groupdict().has_key('arch'):
+        raise ValueError(u"Something appears to be a scheme version, but it's not; failing")
+
+    version = match.groupdict()['arch']
+    print version
+    if match.groupdict().has_key('staging') and match.groupdict()['staging']:
+        version += match.groupdict()['staging']
 
     # we're using integer version numbers instead of string
-    arch, major = [int(i) for i in match.groupdict()['schema_version'].split('.')]
-    minor_match = re.match(".*(%(arch)s){1}\.{1}(%(major)s){1}.*\-{1}(?P<minor>\d+)\-{1}g{1}[0-9a-f]{7}" % {'arch' : arch, 'major' : major}, string)
+    build_match = re.match(".*(%(version)s){1}.*\-{1}(?P<build>\d+)\-{1}g{1}[0-9a-f]{7}" % {'version' : version}, string)
 
-    if not minor_match or not minor_match.groupdict().has_key('minor'):
-        if arch == 0 and major == 0:
-            # we're building first release at all, and 0.0.0 would be...not so appealng, so let's do an exception
-            return (0, 0, 1)
+    if not build_match or not build_match.groupdict().has_key('build'):
+        # if version is 0.0....
+        if re.match("^0(\.0)+$", version):
+            # return 0.0.1 instead of 0.0.0, as "ground zero version" is not what we want
+            build = 1
         else:
-            # otherwise, it looks like we're on tag, so this is the 'zero' version
-            return (arch, major, 0)
+            build = 0
     else:
-        # number of commits since tag
-        return (arch, major, int(minor_match.groupdict()['minor']))
+        build = int(build_match.groupdict()['build'])
+
+    return tuple(list(map(int, version.split(".")))+[build])
 
 def get_git_describe(fix_environment=False, repository_directory=None):
     """ Return output of git describe. If no tag found, initial version is considered to be 0.0.1 """

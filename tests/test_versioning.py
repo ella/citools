@@ -28,6 +28,11 @@ class TestVersioning(TestCase):
     def test_first_release_tag(self):
         self.assertEquals((0, 0, 1), get_version('0.0'))
 
+    def test_bad_release_tag(self):
+        self.assertRaises(ValueError, get_version, 'arghpaxorgz-zsdf')
+
+    def test_on_tag_with_suffix_four_digits(self):
+        self.assertEquals((0, 7, 3, 0), get_version('0.7.3-our-tools-project'))
 
     def test_version_replacing(self):
         source = StringIO("""arakadabra
