@@ -34,6 +34,9 @@ class TestVersioning(TestCase):
     def test_on_tag_with_suffix_four_digits(self):
         self.assertEquals((0, 7, 3, 0), get_version('0.7.3-our-tools-project'))
 
+    def test_project_with_digit_in_name(self):
+        self.assertEquals((9, 7, 3, 45, 532, 11, 44), get_version('log4j-9.7.3.45.532.11-44-g1754c3f'))
+
     def test_version_replacing(self):
         source = StringIO("""arakadabra
 blah blah

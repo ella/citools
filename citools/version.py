@@ -14,15 +14,17 @@ using git describe for it now)
 
 def get_version(string):
     """ Return VERSION tuple, computed from git describe output """
-    match = re.match("[^0-9]*(?P<arch>\d\.\d{1})(?P<staging>\.\d)*.*", string)
+    match = re.match("(?P<bordel>[a-z0-9\-\_]*)(?P<arch>\d\.\d{1})(?P<rest>.*)", string)
 
     if not match or not match.groupdict().has_key('arch'):
         raise ValueError(u"Something appears to be a scheme version, but it's not; failing")
 
     version = match.groupdict()['arch']
-    print version
-    if match.groupdict().has_key('staging') and match.groupdict()['staging']:
-        version += match.groupdict()['staging']
+
+    if match.groupdict().has_key('rest') and match.groupdict()['rest']:
+        staging = re.findall("(\.\d+)", match.groupdict()['rest'])
+        version = ''.join([version]+staging)
+
 
     # we're using integer version numbers instead of string
     build_match = re.match(".*(%(version)s){1}.*\-{1}(?P<build>\d+)\-{1}g{1}[0-9a-f]{7}" % {'version' : version}, string)
