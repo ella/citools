@@ -75,11 +75,11 @@ def get_git_describe(fix_environment=False, repository_directory=None):
 
 def replace_version(source_file, version):
     content = []
-    version_regexp = re.compile(r"^(VERSION){1}(\ )+(\=){1}(\ )+(\(){1}([0-9])+(\,){1}(\ )+([0-9])+(\,){1}(\ )+([0-9])+(\)){1}")
+    version_regexp = re.compile(r"^(VERSION){1}(\ )+(\=){1}(\ )+\({1}([0-9])+(\,{1}(\ )*[0-9]+)+(\)){1}")
 
     for line in source_file:
         if version_regexp.match(line):
-            content.append('VERSION = (%d, %d, %d)\n' % version)
+            content.append('VERSION = %s\n' % str(version))
         else:
             content.append(line)
     return content

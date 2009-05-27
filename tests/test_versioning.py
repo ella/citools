@@ -37,7 +37,7 @@ class TestVersioning(TestCase):
     def test_project_with_digit_in_name(self):
         self.assertEquals((9, 7, 3, 45, 532, 11, 44), get_version('log4j-9.7.3.45.532.11-44-g1754c3f'))
 
-    def test_version_replacing(self):
+    def test_version_replacing_three_digits(self):
         source = StringIO("""arakadabra
 blah blah
 VERSION = (1, 2, 3)
@@ -53,6 +53,23 @@ for i in x:
     print 'olah'"""
 
         self.assertEquals(expected_output, ''.join(replace_version(source, version=(0, 0, 1))))
+
+    def test_version_replacing_lot_digits(self):
+        source = StringIO("""arakadabra
+blah blah
+VERSION = (1, 2, 3)
+x = (3, 2, 1)
+for i in x:
+    print 'olah'""")
+
+        expected_output = """arakadabra
+blah blah
+VERSION = (9, 7, 3, 45, 532, 11, 44)
+x = (3, 2, 1)
+for i in x:
+    print 'olah'"""
+
+        self.assertEquals(expected_output, ''.join(replace_version(source, version=(9, 7, 3, 45, 532, 11, 44))))
 
 class TestGitVersionRetrieving(TestCase):
 
