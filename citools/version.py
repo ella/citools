@@ -158,13 +158,33 @@ class GitSetVersion(config):
     def run(self):
         """ Compute current version for tag and git describe. Expects VERSION variable to be stored in
         $name/__init__.py file (relatively placed to $cwd.) and to be a tuple of three integers.
-        Because of line endings, should be not run on Windows or ending mismatches might occur."""
+        Because of line endings, should be not run on Windows."""
         try:
             current_git_version = get_git_describe()
             version = get_version(current_git_version)
             replace_init(version, self.distribution.get_name())
-            update_debianization(version)
             print "Current version is %s" % '.'.join(map(str, version))
+        except Exception:
+            import traceback
+            traceback.print_exc()
+            raise
+
+class UpdateDebianVersion(config):
+    user_options = [
+    ]
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        """ Compute current version and update debian version accordingly """
+        try:
+            current_git_version = get_git_describe()
+            version = get_version(current_git_version)
+            update_debianization(version)
         except Exception:
             import traceback
             traceback.print_exc()
