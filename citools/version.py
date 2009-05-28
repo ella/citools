@@ -145,6 +145,41 @@ def replace_init(version, name):
     file.writelines(content)
     file.close()
 
+def git_meta_version(dependency_repositories):
+    version = get_git_describe()
+    repositories_dir = mkdtemp(workdir=os.curdir, prefix="build-repository-dependencies-")
+    for repository in dependency_repositories:
+        workdir = fetch_repository(repository, workdir=repositories_dir)
+        version = sum_versions(version, get_git_describe(workdir=workdir))
+
+    rmtree(repositories_dir)
+    return version
+
+class GitSetMetaVersion(config):
+    user_options = [
+    ]
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        """
+        Clone all dependencies into temporary directory. Collect all git_set_versions for all
+        packages (including myself).
+        Update on all places as in git_set_version.
+        """
+        try:
+            meta_version = get_meta_version(self.dependency_repositories)
+            replace_init(version, self.distribution.get_name())
+            print "Current version is %s" % '.'.join(map(str, version))
+        except Exception:
+            import traceback
+            traceback.print_exc()
+            raise
+
 class GitSetVersion(config):
     user_options = [
     ]
@@ -169,3 +204,4 @@ class GitSetVersion(config):
             import traceback
             traceback.print_exc()
             raise
+

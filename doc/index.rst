@@ -24,7 +24,19 @@ Then, version must be replaced in all files needed. We're now rewriting in follo
 # __versionstr__ (if found) in setup.py is replaced to string (not tuple). This is for libraries that must not import library itself and set version to $library.__versionstr__ dynamically
 # TODO: debian ,)
 
+----------------------------
+"Meta" packages
+----------------------------
 
+There may be need for creating "meta" packages, that do not contain any code, but just specifies which packages should be bundled together (and in which version). Citools supports this behaviour by automatic computation of metapackage version and specifying exact version (especially for debian).
+
+You must only specify repositories You depend upon in arguments for setuptools.setup (only git supported for now)::
+    dependency_repositories = [
+        "ssh://server/my/library1",
+        "http://github.com/myuser/library/",
+    ]
+
+By running ``setup.py compute_meta_version_git``, library version will be computed as it's own version + sum of all versions of all child libraries.
 
 ----------------------------
 (Django) web environment
