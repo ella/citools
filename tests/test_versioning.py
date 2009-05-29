@@ -8,7 +8,7 @@ from StringIO import StringIO
 from tempfile import mkdtemp
 
 from citools.version import (
-    get_version, get_git_describe, replace_version, git_meta_version,
+    get_version, get_git_describe, replace_version, get_meta_version,
     sum_versions, fetch_repository
 )
 
@@ -200,7 +200,7 @@ class TestMetaRepository(TestCase):
         # 1.0.59.1 is first child
         # 2.0.12 is second child
         # => 3.1.71.1
-        self.assertEquals((3, 1, 71, 1), git_meta_version(dependency_repositories=[self.repo_one, self.repo_two]))
+        self.assertEquals((3, 1, 71, 1), get_meta_version(dependency_repositories=[self.repo_one, self.repo_two]))
 
     def test_repository_fetching(self):
         dir = mkdtemp()

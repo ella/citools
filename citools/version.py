@@ -185,7 +185,7 @@ def fetch_repository(repository, workdir):
     check_call(["git", "clone", repository, dir], cwd=workdir, stdout=PIPE, stdin=PIPE)
     return dir
 
-def git_meta_version(dependency_repositories):
+def get_meta_version(dependency_repositories):
     version = get_version(get_git_describe())
     repositories_dir = mkdtemp(dir=os.curdir, prefix="build-repository-dependencies-")
     for repository in dependency_repositories:
