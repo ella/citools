@@ -1,8 +1,11 @@
 from distutils.command.config import config
-
 import re
 import os
 from popen2 import Popen3
+from shutil import rmtree
+from subprocess import check_call, PIPE
+from tempfile import mkdtemp
+
 
 """
 Help us handle continuous versioning. Idea is simple: We have n-number digits
@@ -41,8 +44,34 @@ def get_version(string):
 
     return tuple(list(map(int, version.split(".")))+[build])
 
+def sum_versions(version1, version2):
+    """
+    Return sum of both versions. Raise ValueError when negative number met
+    i.e.:
+    (0, 2) = (0, 1) + (0, 1)
+    (1, 23, 12) = (0, 2, 12) + (1, 21)
+    """
+    final_version = [int(i) for i in version1 if int(i) >= 0]
+
+    if len(final_version) != len(version1):
+        raise ValueError("Negative number in version number not allowed")
+
+    position = 0
+    for part in version2:
+        if int(part) < 0:
+            raise ValueError("Negative number in version number not allowed")
+        if len(final_version) < position+1:
+            final_version.append(part)
+        else:
+            final_version[position] += part
+        position += 1
+    return tuple(final_version)
+
 def get_git_describe(fix_environment=False, repository_directory=None):
     """ Return output of git describe. If no tag found, initial version is considered to be 0.0.1 """
+    if repository_directory and not fix_environment:
+        raise ValueError("Both fix_environment and repository_directory or none of them must be given")
+    
     if fix_environment:
         if not repository_directory:
             raise ValueError(u"Cannot fix environment when repository directory not given")
@@ -145,12 +174,24 @@ def replace_init(version, name):
     file.writelines(content)
     file.close()
 
+def fetch_repository(repository, workdir):
+    """
+    Fetch repository inside a workdir. Return filesystem path of newly created dir.
+    """
+    #HACK: I'm now aware about some "generate me temporary dir name function",
+    # so I'll make this create/remove workaround - patch welcomed ,)
+    dir = os.path.abspath(mkdtemp(dir=workdir))
+    rmtree(dir)
+    check_call(["git", "clone", repository, dir], cwd=workdir, stdout=PIPE, stdin=PIPE)
+    return dir
+
 def git_meta_version(dependency_repositories):
-    version = get_git_describe()
-    repositories_dir = mkdtemp(workdir=os.curdir, prefix="build-repository-dependencies-")
+    version = get_version(get_git_describe())
+    repositories_dir = mkdtemp(dir=os.curdir, prefix="build-repository-dependencies-")
     for repository in dependency_repositories:
         workdir = fetch_repository(repository, workdir=repositories_dir)
-        version = sum_versions(version, get_git_describe(workdir=workdir))
+        new_version = get_version(get_git_describe(repository_directory=workdir, fix_environment=True))
+        version = sum_versions(version, new_version)
 
     rmtree(repositories_dir)
     return version
@@ -173,8 +214,8 @@ class GitSetMetaVersion(config):
         """
         try:
             meta_version = get_meta_version(self.dependency_repositories)
-            replace_init(version, self.distribution.get_name())
-            print "Current version is %s" % '.'.join(map(str, version))
+            replace_init(meta_version, self.distribution.get_name())
+            print "Current version is %s" % '.'.join(map(str, meta_version))
         except Exception:
             import traceback
             traceback.print_exc()
