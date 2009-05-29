@@ -45,6 +45,7 @@ setup(
         'distutils.commands' : [
             'compute_version_git = citools.version:GitSetVersion',
             'compute_version_meta_git = citools.version:GitSetMetaVersion',
+	    'update_debian_version = citools.version:UpdateDebianVersion',
         ],
     },
     install_requires = [
