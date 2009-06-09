@@ -167,7 +167,12 @@ def update_debianization(version):
 
 def replace_init(version, name):
     """ Update VERSION attribute in $name/__init__.py module """
-    file = open(os.path.join(name, '__init__.py'), 'r')
+    file = os.path.join(name, '__init__.py')
+    replace_version_in_file(version, file)
+
+def replace_version_in_file(version, file):
+    """ Update VERSION attribute in $name/__init__.py module """
+    file = open(file, 'r')
     content = replace_version(version=version, source_file=file)
     file.close()
     file = open(file.name, 'wb')
@@ -197,7 +202,7 @@ def get_meta_version(dependency_repositories):
     for repository_dict in dependency_repositories:
         if repository_dict.has_key('branch'):
             branch = repository_dict['branch']
-	else:
+        else:
             branch = None
         workdir = fetch_repository(repository_dict['url'], branch=branch, workdir=repositories_dir)
         new_version = get_version(get_git_describe(repository_directory=workdir, fix_environment=True))
@@ -222,8 +227,9 @@ class GitSetMetaVersion(config):
         Update on all places as in git_set_version.
         """
         try:
-            meta_version = get_meta_version(self.dependencies_urls)
+            meta_version = get_meta_version(self.distribution.dependencies_git_repositories)
             replace_init(meta_version, self.distribution.get_name())
+            replace_version_in_file(meta_version, 'setup.py')
             print "Current version is %s" % '.'.join(map(str, meta_version))
         except Exception:
             import traceback
@@ -274,3 +280,9 @@ class UpdateDebianVersion(config):
             import traceback
             traceback.print_exc()
             raise
+
+def validate_repositories(dist, attr, value):
+    # TODO: 
+    # http://peak.telecommunity.com/DevCenter/setuptools#adding-setup-arguments
+    pass
+

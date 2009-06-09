@@ -47,6 +47,9 @@ setup(
             'compute_version_meta_git = citools.version:GitSetMetaVersion',
 	    'update_debian_version = citools.version:UpdateDebianVersion',
         ],
+        "distutils.setup_keywords": [
+            "dependencies_git_repositories = citools.version:validate_repositories",
+        ],
     },
     install_requires = [
         'setuptools>=0.6b1',
