@@ -8,38 +8,38 @@ from StringIO import StringIO
 from tempfile import mkdtemp
 
 from citools.version import (
-    get_version, get_git_describe, replace_version, get_meta_version,
+    compute_version, get_git_describe, replace_version, compute_meta_version,
     sum_versions, fetch_repository
 )
 
 class TestVersioning(TestCase):
 
     def test_after_tag(self):
-        self.assertEquals((0, 7, 20), get_version('tools-0.7-20-g1754c3f'))
+        self.assertEquals((0, 7, 20), compute_version('tools-0.7-20-g1754c3f'))
 
     def test_after_tag_without_name(self):
-        self.assertEquals((0, 7, 20), get_version('0.7-20-g1754c3f'))
+        self.assertEquals((0, 7, 20), compute_version('0.7-20-g1754c3f'))
 
     def test_after_tag_with_project_suffix(self):
-        self.assertEquals((0, 7, 20), get_version('0.7-our-tools-project-20-g1754c3f'))
+        self.assertEquals((0, 7, 20), compute_version('0.7-our-tools-project-20-g1754c3f'))
 
     def test_on_tag(self):
-        self.assertEquals((0, 7, 0), get_version('tools-0.7'))
+        self.assertEquals((0, 7, 0), compute_version('tools-0.7'))
 
     def test_on_tag_with_suffix(self):
-        self.assertEquals((0, 7, 0), get_version('0.7-our-tools-project'))
+        self.assertEquals((0, 7, 0), compute_version('0.7-our-tools-project'))
 
     def test_first_release_tag(self):
-        self.assertEquals((0, 0, 1), get_version('0.0'))
+        self.assertEquals((0, 0, 1), compute_version('0.0'))
 
     def test_bad_release_tag(self):
-        self.assertRaises(ValueError, get_version, 'arghpaxorgz-zsdf')
+        self.assertRaises(ValueError, compute_version, 'arghpaxorgz-zsdf')
 
     def test_on_tag_with_suffix_four_digits(self):
-        self.assertEquals((0, 7, 3, 0), get_version('0.7.3-our-tools-project'))
+        self.assertEquals((0, 7, 3, 0), compute_version('0.7.3-our-tools-project'))
 
     def test_project_with_digit_in_name(self):
-        self.assertEquals((9, 7, 3, 45, 532, 11, 44), get_version('log4j-9.7.3.45.532.11-44-g1754c3f'))
+        self.assertEquals((9, 7, 3, 45, 532, 11, 44), compute_version('log4j-9.7.3.45.532.11-44-g1754c3f'))
 
     def test_version_replacing_three_digits(self):
         source = StringIO("""arakadabra
@@ -190,17 +190,17 @@ class TestMetaRepository(TestCase):
 
     def test_proper_child_version(self):
         print get_git_describe(repository_directory=self.repo_one, fix_environment=True)
-        self.assertEquals((1, 0, 59, 1), get_version(get_git_describe(repository_directory=self.repo_one, fix_environment=True)))
+        self.assertEquals((1, 0, 59, 1), compute_version(get_git_describe(repository_directory=self.repo_one, fix_environment=True)))
 
     def test_proper_second_child_version(self):
-        self.assertEquals((2, 0, 12), get_version(get_git_describe(repository_directory=self.repo_two, fix_environment=True)))
+        self.assertEquals((2, 0, 12), compute_version(get_git_describe(repository_directory=self.repo_two, fix_environment=True)))
 
     def test_computing_meta_version(self):
         # 0.1.0 is my version
         # 1.0.59.1 is first child
         # 2.0.12 is second child
         # => 3.1.71.1
-	self.assertEquals((3, 1, 71, 1), get_meta_version(dependency_repositories=[{'url':self.repo_one}, {'url' : self.repo_two}]))
+	self.assertEquals((3, 1, 71, 1), compute_meta_version(dependency_repositories=[{'url':self.repo_one}, {'url' : self.repo_two}]))
 
     def test_repository_fetching(self):
         dir = mkdtemp()
@@ -211,7 +211,7 @@ class TestMetaRepository(TestCase):
     def test_fetched_repository_has_same_version(self):
         dir = mkdtemp()
         repodir = fetch_repository(repository=self.repo_two, workdir=dir)
-        self.assertEquals((2, 0, 12), get_version(get_git_describe(repository_directory=repodir, fix_environment=True)))
+        self.assertEquals((2, 0, 12), compute_version(get_git_describe(repository_directory=repodir, fix_environment=True)))
         rmtree(dir)
 
     def tearDown(self):
