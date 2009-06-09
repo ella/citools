@@ -200,12 +200,12 @@ class TestMetaRepository(TestCase):
         # 1.0.59.1 is first child
         # 2.0.12 is second child
         # => 3.1.71.1
-        self.assertEquals((3, 1, 71, 1), get_meta_version(dependency_repositories=[self.repo_one, self.repo_two]))
+	self.assertEquals((3, 1, 71, 1), get_meta_version(dependency_repositories=[{'url':self.repo_one}, {'url' : self.repo_two}]))
 
     def test_repository_fetching(self):
         dir = mkdtemp()
         repodir = fetch_repository(repository=self.repo_two, workdir=dir)
-        self.assertEquals([".git", "second.txt"], os.listdir(repodir))
+        self.assertEquals([".git", "second.txt"].sort(), os.listdir(repodir).sort())
         rmtree(dir)
 
     def test_fetched_repository_has_same_version(self):

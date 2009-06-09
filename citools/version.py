@@ -174,25 +174,34 @@ def replace_init(version, name):
     file.writelines(content)
     file.close()
 
-def fetch_repository(repository, workdir):
+def fetch_repository(repository, workdir, branch=None):
     """
     Fetch repository inside a workdir. Return filesystem path of newly created dir.
     """
     #HACK: I'm now aware about some "generate me temporary dir name function",
     # so I'll make this create/remove workaround - patch welcomed ,)
     dir = os.path.abspath(mkdtemp(dir=workdir))
-    rmtree(dir)
-    check_call(["git", "clone", repository, dir], cwd=workdir, stdout=PIPE, stdin=PIPE)
+    
+    if not branch:
+        branch="master"
+    
+    check_call(["git", "init"], cwd=dir, stdout=PIPE, stdin=PIPE, stderr=PIPE)
+    check_call(["git", "remote", "add", "origin", repository], cwd=dir, stdout=PIPE, stdin=PIPE, stderr=PIPE)
+    check_call(["git", "fetch"], cwd=dir, stdout=PIPE, stdin=PIPE, stderr=PIPE)
+    check_call(["git", "checkout", "-b", branch, "origin/%s" % branch], cwd=dir, stdout=PIPE, stdin=PIPE, stderr=PIPE)
     return dir
 
 def get_meta_version(dependency_repositories):
     version = get_version(get_git_describe())
     repositories_dir = mkdtemp(dir=os.curdir, prefix="build-repository-dependencies-")
-    for repository in dependency_repositories:
-        workdir = fetch_repository(repository, workdir=repositories_dir)
+    for repository_dict in dependency_repositories:
+        if repository_dict.has_key('branch'):
+            branch = repository_dict['branch']
+	else:
+            branch = None
+        workdir = fetch_repository(repository_dict['url'], branch=branch, workdir=repositories_dir)
         new_version = get_version(get_git_describe(repository_directory=workdir, fix_environment=True))
         version = sum_versions(version, new_version)
-
     rmtree(repositories_dir)
     return version
 
@@ -213,7 +222,7 @@ class GitSetMetaVersion(config):
         Update on all places as in git_set_version.
         """
         try:
-            meta_version = get_meta_version(self.dependency_repositories)
+            meta_version = get_meta_version(self.dependencies_urls)
             replace_init(meta_version, self.distribution.get_name())
             print "Current version is %s" % '.'.join(map(str, meta_version))
         except Exception:
