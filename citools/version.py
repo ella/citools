@@ -145,7 +145,8 @@ def update_debianization(version):
     Update Debian's changelog to current version and append "dummy" message.
     """
     # we need to add string version in the whole method
-    version = '.'.join(map(str, version))
+    if isinstance(version, (tuple, list)):
+        version = '.'.join(map(str, version))
     changelog = 'debian/changelog'
     hash = get_git_head_hash()
     message = "Version %(version)s was build from revision %(hash)s by automated build system" % {
@@ -231,7 +232,7 @@ class GitSetMetaVersion(config):
             replace_init(meta_version, self.distribution.get_name())
             replace_version_in_file(meta_version, 'setup.py')
             version_str = '.'.join(map(str, meta_version))
-            self.distribution.version = version_str
+            self.distribution.metadata.version = version_str
             
             print "Current version is %s" % '.'.join(map(str, meta_version))
         except Exception:
@@ -258,7 +259,7 @@ class GitSetVersion(config):
             version = compute_version(current_git_version)
             replace_init(version, self.distribution.get_name())
             version_str = '.'.join(map(str, current_git_version))
-            self.distribution.version = version_str
+            self.distribution.metadata.version = version_str
             print "Current version is %s" % version_str
         except Exception:
             import traceback
@@ -278,7 +279,7 @@ class UpdateDebianVersion(config):
     def run(self):
         """ Compute current version and update debian version accordingly """
         try:
-            update_debianization(self.distribution.version)
+            update_debianization(self.distribution.get_version())
         except Exception:
             import traceback
             traceback.print_exc()
