@@ -258,7 +258,7 @@ class GitSetVersion(config):
             current_git_version = get_git_describe()
             version = compute_version(current_git_version)
             replace_init(version, self.distribution.get_name())
-            version_str = '.'.join(map(str, current_git_version))
+            version_str = '.'.join(map(str, version))
             self.distribution.metadata.version = version_str
             print "Current version is %s" % version_str
         except Exception:
