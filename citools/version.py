@@ -15,7 +15,7 @@ n is then computed as number-of-commits since last version-setting tag (and we'r
 using git describe for it now)
 """
 
-def get_version(string):
+def compute_version(string):
     """ Return VERSION tuple, computed from git describe output """
     match = re.match("(?P<bordel>[a-z0-9\-\_]*)(?P<arch>\d\.\d{1})(?P<rest>.*)", string)
 
@@ -196,8 +196,8 @@ def fetch_repository(repository, workdir, branch=None):
     check_call(["git", "checkout", "-b", branch, "origin/%s" % branch], cwd=dir, stdout=PIPE, stdin=PIPE, stderr=PIPE)
     return dir
 
-def get_meta_version(dependency_repositories):
-    version = get_version(get_git_describe())
+def compute_meta_version(dependency_repositories):
+    version = compute_version(get_git_describe())
     repositories_dir = mkdtemp(dir=os.curdir, prefix="build-repository-dependencies-")
     for repository_dict in dependency_repositories:
         if repository_dict.has_key('branch'):
@@ -205,7 +205,7 @@ def get_meta_version(dependency_repositories):
         else:
             branch = None
         workdir = fetch_repository(repository_dict['url'], branch=branch, workdir=repositories_dir)
-        new_version = get_version(get_git_describe(repository_directory=workdir, fix_environment=True))
+        new_version = compute_version(get_git_describe(repository_directory=workdir, fix_environment=True))
         version = sum_versions(version, new_version)
     rmtree(repositories_dir)
     return version
@@ -227,9 +227,12 @@ class GitSetMetaVersion(config):
         Update on all places as in git_set_version.
         """
         try:
-            meta_version = get_meta_version(self.distribution.dependencies_git_repositories)
+            meta_version = compute_meta_version(self.distribution.dependencies_git_repositories)
             replace_init(meta_version, self.distribution.get_name())
             replace_version_in_file(meta_version, 'setup.py')
+            version_str = '.'.join(map(str, meta_version))
+            self.distribution.version = version_str
+            
             print "Current version is %s" % '.'.join(map(str, meta_version))
         except Exception:
             import traceback
@@ -252,9 +255,11 @@ class GitSetVersion(config):
         Because of line endings, should be not run on Windows."""
         try:
             current_git_version = get_git_describe()
-            version = get_version(current_git_version)
+            version = compute_version(current_git_version)
             replace_init(version, self.distribution.get_name())
-            print "Current version is %s" % '.'.join(map(str, version))
+            version_str = '.'.join(map(str, current_git_version))
+            self.distribution.version = version_str
+            print "Current version is %s" % version_str
         except Exception:
             import traceback
             traceback.print_exc()
@@ -273,9 +278,7 @@ class UpdateDebianVersion(config):
     def run(self):
         """ Compute current version and update debian version accordingly """
         try:
-            current_git_version = get_git_describe()
-            version = get_version(current_git_version)
-            update_debianization(version)
+            update_debianization(self.get_version())
         except Exception:
             import traceback
             traceback.print_exc()
