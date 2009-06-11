@@ -3,9 +3,9 @@ import re
 import os
 from popen2 import Popen3
 from shutil import rmtree
-from subprocess import check_call, PIPE
 from tempfile import mkdtemp
 
+from citools.git import fetch_repository
 
 """
 Help us handle continuous versioning. Idea is simple: We have n-number digits
@@ -179,23 +179,6 @@ def replace_version_in_file(version, file):
     file = open(file.name, 'wb')
     file.writelines(content)
     file.close()
-
-def fetch_repository(repository, workdir, branch=None):
-    """
-    Fetch repository inside a workdir. Return filesystem path of newly created dir.
-    """
-    #HACK: I'm now aware about some "generate me temporary dir name function",
-    # so I'll make this create/remove workaround - patch welcomed ,)
-    dir = os.path.abspath(mkdtemp(dir=workdir))
-    
-    if not branch:
-        branch="master"
-    
-    check_call(["git", "init"], cwd=dir, stdout=PIPE, stdin=PIPE, stderr=PIPE)
-    check_call(["git", "remote", "add", "origin", repository], cwd=dir, stdout=PIPE, stdin=PIPE, stderr=PIPE)
-    check_call(["git", "fetch"], cwd=dir, stdout=PIPE, stdin=PIPE, stderr=PIPE)
-    check_call(["git", "checkout", "-b", branch, "origin/%s" % branch], cwd=dir, stdout=PIPE, stdin=PIPE, stderr=PIPE)
-    return dir
 
 def compute_meta_version(dependency_repositories):
     version = compute_version(get_git_describe())
