@@ -28,7 +28,7 @@ class CopyDependencyImages(config):
 
     def run(self):
         try:
-            copy_images(self.distribution.dependencies_git_repositories)
+            copy_images(self.distribution.dependencies_git_repositories, 'static')
         except Exception:
             import traceback
             traceback.print_exc()
