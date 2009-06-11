@@ -45,6 +45,35 @@ class TestCopyImages(object):
 
         assert_equals(self.file_content, open(os.path.join(self.tmp_static, self.package_name, 'images', 'test.txt')).read())
 
+    def test_dependency_without_static_is_ommited(self):
+        # create temporary directory and initialize git repository there
+        tmp_repo = mkdtemp(prefix='test_git_')
+        check_call(['git', 'init'], stdout=PIPE, stdin=PIPE, cwd=tmp_repo)
+
+        # commit something empty
+        f = open(os.path.join(tmp_repo, 'testicek.txt'), 'w')
+        f.write(self.file_content)
+        f.close()
+
+        check_call(['git', 'add', os.path.join(tmp_repo, 'testicek.txt')], stdout=PIPE, stdin=PIPE, cwd=tmp_repo)
+        check_call(['git', 'commit', '-a', '-m', '"Dummy test"'], stdout=PIPE, stdin=PIPE, cwd=tmp_repo)
+
+
+        copy_images(repositories=[{
+            'url': os.path.abspath(tmp_repo),
+            'branch': 'master',
+            'package_name' : self.package_name,
+        },
+        {
+            'url': os.path.abspath(self.repo),
+            'branch': 'master',
+            'package_name' : self.package_name,
+        }], static_dir=self.tmp_static)
+
+        # sanity test: while we copied without error, second repo was OK
+        assert_equals(self.file_content, open(os.path.join(self.tmp_static, self.package_name, 'images', 'test.txt')).read())
+
+
     def tearDown(self):
         os.chdir(self.oldcwd)
 
