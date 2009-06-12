@@ -130,6 +130,7 @@ Description: package1
 
 
     def test_myself(self):
+        '''
         os.chdir(self.repo1)
         check_call(['echo', 'AAA',])
         check_call(['git', '--no-pager', 'log', '-p'])
@@ -137,6 +138,7 @@ Description: package1
         check_call(['git', 'describe'])
         check_call(['echo', 'BBB',])
         os.chdir(self.oldcwd)
+        '''
 
     def test_dependencies_versions_correctly_replaced(self):
         repositories = [
