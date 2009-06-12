@@ -1,4 +1,26 @@
 import re
+
+__all__ = ("Dependency", "ControlParser")
+
+class Dependency(object):
+    """
+    Dependency in the debian package
+    """
+    def __init__(self, name, version=None):
+        super(Dependency, self).__init__()
+        
+        self.name = name
+        self.version = version
+
+    def get_dependency_string(self):
+        if self.version:
+            return u"%(name)s (= %(version)s)" % {
+                'name' : self.name,
+                'version' : self.version,
+            }
+        else:
+            return self.name
+
 class ControlParser(object):
     """
     Parser for debian/control files
@@ -17,7 +39,7 @@ class ControlParser(object):
         dependency_candidates = line.split(",")
         for candidate in dependency_candidates:
             deps = re.findall("(?P<name>[a-z0-9\-]+)(?P<version>\ \([\=\>\<]+\ [0-9\-\.]+\))?", candidate)
-            dependencies.extend([i[0] for i in deps])
+            dependencies.extend([Dependency(i[0]) for i in deps])
         return dependencies
 
     def get_dependencies(self):
@@ -25,6 +47,8 @@ class ControlParser(object):
         dependencies = []
         for line in self.control_file:
             if line.startswith('Depends:'):
-                print line
                 dependencies.extend(self.parse_dependency_line(line))
         return dependencies
+
+    def replace_dependencies(self):
+        pass

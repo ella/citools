@@ -1,7 +1,7 @@
 from StringIO import StringIO
 from nose.tools import assert_equals
 
-from citools.debian import ControlParser
+from citools.debian import ControlParser, Dependency
 
 
 class TestControlParsing(object):
@@ -32,12 +32,19 @@ Description: xxx
 
     def test_dependency_list_retrieved_from_file(self):
         
-        retrieved = ControlParser(self.test_control).get_dependencies()
+        retrieved = [i.name for i in ControlParser(self.test_control).get_dependencies()]
         retrieved.sort()
 
         assert_equals(self.dependencies_list, retrieved)
         
     def test_dependency_list_retrieved_from_line(self):
         assert_equals(["centrum-mypage-icentrum", "centrum-python-mypage"],
-            ControlParser(self.test_control).parse_dependency_line("Depends: centrum-mypage-icentrum, centrum-python-mypage (= 0.5.0.0)")
+            [i.name for i in ControlParser(self.test_control).parse_dependency_line("Depends: centrum-mypage-icentrum, centrum-python-mypage (= 0.5.0.0)")]
         )
+
+class TestDependency(object):
+    def test_dependency_string_without_version(self):
+        assert_equals('centrum-mypage', Dependency(name='centrum-mypage').get_dependency_string())
+
+    def test_dependency_string_with_version(self):
+        assert_equals('centrum-mypage (= 0.5.0.0)', Dependency(name='centrum-mypage', version='0.5.0.0').get_dependency_string())
