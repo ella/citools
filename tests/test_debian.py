@@ -27,7 +27,8 @@ class DependencyTestCase(object):
 
 class TestControlParsing(DependencyTestCase):
     def setUp(self):
-        self.test_control = """Source: centrum-mypage-meta
+        self.test_control = u"""\
+Source: centrum-mypage-meta
 Section: apps
 Priority: optional
 Maintainer: Jan Kral <xxx@xxx.com>
@@ -75,7 +76,8 @@ Description: xxx
         )
 
     def test_depencies_replaced(self):
-        self.expected_replaced = u"""Source: centrum-mypage-meta
+        self.expected_replaced = u"""\
+Source: centrum-mypage-meta
 Section: apps
 Priority: optional
 Maintainer: Jan Kral <xxx@xxx.com>
