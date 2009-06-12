@@ -186,32 +186,6 @@ class TestDependency(DependencyTestCase):
 
 class TestUpdateDependencyVersions(object):
     def setUp(self):
-        self.tmp_control_dir = mkdtemp(prefix='test_control_')
-        self.test_control = os.path.join(self.tmp_control_dir, 'control')
-        self.control_content = """\
-Source: centrum-python-metapackage
-Section: python
-Priority: optional
-Maintainer: John Doe <john@doe.com>
-Build-Depends: cdbs (>= 0.4.41), debhelper (>= 5.0.37.2), python-dev, python-support (>= 0.3), python-setuptools
-Standards-Version: 3.7.2
-
-Package: centrum-python-metapackage-aaa
-Architecture: all
-Depends: centrum-python-package1-aaa (= 0.1.0), centrum-python-package2-aaa (= 0.2.0)
-Description: metapackage aaa
-
-Package: centrum-python-metapackage-bbb
-Architecture: all
-Depends: centrum-python-package1-bbb (= 0.1.0), centrum-python-package2-bbb (= 0.2.0)
-Description: metapackage bbb
-
-"""
-
-        f = open(self.test_control, 'w')
-        f.write(self.control_content)
-        f.close()
-
         self.oldcwd = os.getcwd()
 
         # create temporary directory and initialize git repository there
@@ -223,6 +197,37 @@ Description: metapackage bbb
         self.package2_name = 'package2'
         self.repo2 = mkdtemp(prefix='test_git2_')
         self.create_repository(self.repo2, self.package2_name, '0.2')
+
+        # create testing control file
+        self.tmp_control_dir = mkdtemp(prefix='test_control_')
+        self.test_control = os.path.join(self.tmp_control_dir, 'control')
+        self.control_content_pattern = u"""\
+Source: centrum-python-metapackage
+Section: python
+Priority: optional
+Maintainer: John Doe <john@doe.com>
+Build-Depends: cdbs (>= 0.4.41), debhelper (>= 5.0.37.2), python-dev, python-support (>= 0.3), python-setuptools
+Standards-Version: 3.7.2
+
+Package: centrum-python-metapackage-aaa
+Architecture: all
+Depends: centrum-python-%(package1_name)s-aaa (= %(package1_version)s), centrum-python-%(package2_name)s-aaa (= %(package2_version)s)
+Description: metapackage aaa
+
+Package: centrum-python-metapackage-bbb
+Architecture: all
+Depends: centrum-python-%(package1_name)s-bbb (= %(package1_version)s), centrum-python-%(package2_name)s-bbb (= %(package2_version)s)
+Description: metapackage bbb
+"""
+        self.control_content = self.control_content_pattern % {
+            'package1_name': self.package1_name,
+            'package2_name': self.package2_name,
+            'package1_version': '0.1.0',
+            'package2_version': '0.2.0',
+        }
+        f = open(self.test_control, 'w')
+        f.write(self.control_content)
+        f.close()
 
     def create_repository(self, repository_dir, project_name, tag_number):
         os.chdir(repository_dir)
@@ -243,7 +248,7 @@ Description: metapackage bbb
         # create debianisation and package in repo
         os.mkdir('debian')
         f = open(os.path.join('debian', 'control'), 'w')
-        f.write('''\
+        f.write(u"""\
 Source: centrum-python-%(project_name)s
 Section: python
 Priority: optional
@@ -260,8 +265,7 @@ Package: centrum-python-%(project_name)s-bbb
 Architecture: all
 Depends:
 Description: %(project_name)s bbb
-
-''' % {'project_name': project_name,})
+""" % {'project_name': project_name,})
         f.close()
 
         check_call(['git', 'add', '.'], stdout=PIPE, stdin=PIPE)
@@ -296,10 +300,14 @@ Description: %(project_name)s bbb
         ]
         update_dependency_versions(repositories, self.test_control)
 
-        # TODO: this should not be the same ;)
-        control_output = self.control_content
+        expected_control_output = self.control_content_pattern % {
+            'package1_name': self.package1_name,
+            'package2_name': self.package2_name,
+            'package1_version': '0.1.1',
+            'package2_version': '0.2.1',
+        }
 
-        assert_equals(open(self.test_control).read(), self.control_content)
+        assert_equals(expected_control_output, open(self.test_control).read())
 
 
     def tearDown(self):
