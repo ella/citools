@@ -1,4 +1,5 @@
 import re
+
 class ControlParser(object):
     """
     Parser for debian/control files
@@ -28,3 +29,7 @@ class ControlParser(object):
                 print line
                 dependencies.extend(self.parse_dependency_line(line))
         return dependencies
+
+def update_dependency_versions(repositories, control_path):
+    pass
+

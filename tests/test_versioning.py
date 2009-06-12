@@ -200,7 +200,7 @@ class TestMetaRepository(TestCase):
         # 1.0.59.1 is first child
         # 2.0.12 is second child
         # => 3.1.71.1
-	self.assertEquals((3, 1, 71, 1), compute_meta_version(dependency_repositories=[{'url':self.repo_one}, {'url' : self.repo_two}]))
+        self.assertEquals((3, 1, 71, 1), compute_meta_version(dependency_repositories=[{'url':self.repo_one}, {'url' : self.repo_two}]))
 
     def test_repository_fetching(self):
         dir = mkdtemp()

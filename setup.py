@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 
-__versionstr__ = '0.0.1.0'
+VERSION = (0, 1, 0)
+__version__ = VERSION
+__versionstr__ = '.'.join(map(str, VERSION))
+
 setup(
     name = 'citools',
     version = __versionstr__,
@@ -10,12 +13,13 @@ setup(
         'CI Tools',
         '',
         'Ultimate goal of CI system is to provide single "integration button"',
-	'to automagically do everything needed for creating a release',
-	"(and ensure it's properly build version).",
-	"This package provides a set of setuptools plugins (setup.py commands)",
-	"to provide required functionality and make CI a breeze.",
-	"Main aim of this project are Django-based applications, but it's usable",
-	"for generic python projects as well.",
+        'to automagically do everything needed for creating a release',
+        "(and ensure it's properly build version).",
+        '',
+        "This package provides a set of setuptools plugins (setup.py commands)",
+        "to provide required functionality and make CI a breeze.",
+        "Main aim of this project are Django-based applications, but it's usable",
+        "for generic python projects as well.",
     )),
     author = 'centrum holdings s.r.o',
     author_email='devel@centrumholdings.com',
@@ -40,13 +44,13 @@ setup(
     ],
     entry_points = {
         'console_scripts': [
-	    'citools = citools.main:main',
+            'citools = citools.main:main',
         ],
         'distutils.commands' : [
             'compute_version_git = citools.version:GitSetVersion',
             'compute_version_meta_git = citools.version:GitSetMetaVersion',
-	    'update_debian_version = citools.version:UpdateDebianVersion',
-	    'copy_dependency_images = citools.build:CopyDependencyImages',
+            'update_debian_version = citools.version:UpdateDebianVersion',
+            'copy_dependency_images = citools.build:CopyDependencyImages',
         ],
         "distutils.setup_keywords": [
             "dependencies_git_repositories = citools.version:validate_repositories",
