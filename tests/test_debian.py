@@ -57,6 +57,51 @@ Description: xxx
             [i.name for i in ControlParser(self.test_control).parse_dependency_line("Depends: centrum-mypage-icentrum, centrum-python-mypage (= 0.5.0.0)")]
         )
 
+    def test_dependency_list_retrieved_from_line_with_version(self):
+        self.assert_dependencies_equals([Dependency("centrum-python-mypage", "0.5.0.0"), Dependency("centrum-mypage-icentrum")],
+            ControlParser(self.test_control).parse_dependency_line("Depends: centrum-mypage-icentrum, centrum-python-mypage (= 0.5.0.0)"),
+        )
+
+    def test_depencies_replaced(self):
+        self.expected_replaced = u"""Source: centrum-mypage-meta
+Section: apps
+Priority: optional
+Maintainer: Jan Kral <xxx@xxx.com>
+Uploaders: Richard Fridrich <xxx@xxx.com>, Tomas Hrabinsky <xxx@xxx.com>
+Build-Depends: cdbs (>= 0.4.41), debhelper (>= 5.0.37.2)
+Standards-Version: 3.7.2
+
+# meta package
+Package: centrum-mypage-meta
+Architecture: all
+Depends:
+Description: mypage metapackage
+
+# installable frontend metapackage
+Package: centrum-mypage-fe
+Architecture: all
+Depends: centrum-mypage-icentrum (= 0.5.0.0), centrum-python-mypage (= 0.5.0.0), centrum-djangosherlock-slovniky (= 0.5.0), centrum-python-djangosherlock (>= 0.0.1), centrum-mypage-config (= 0.5.0.0), centrum-apache2, centrum-python-django
+Description: xxx
+"""
+        parser = ControlParser(self.test_control)
+        parser.replace_dependencies(
+            dependencies = [Dependency("centrum-djangosherlock-slovniky", "0.5.0")]
+        )
+
+        assert_equals(self.expected_replaced, parser.control_file)
+
+    def test_debversion_parsing_simple(self):
+        dep = Dependency(u"")
+        dep.extract_version_from_debversion(" (= 0.5.0.0)")
+        assert_equals("0.5.0.0",  dep.version)
+
+    def test_debversion_parsing_with_noneqaual_signs(self):
+        dep = Dependency(u"")
+        dep.extract_version_from_debversion(" (>= 0.1)")
+        assert_equals(">=",  dep.sign)
+        # sanity check
+        assert_equals("0.1",  dep.version)
+
 class TestDependency(DependencyTestCase):
         
     def test_dependency_string_without_version(self):
@@ -86,11 +131,38 @@ class TestDependency(DependencyTestCase):
             new_dependencies = new_dependencies,
         ))
 
+    def test_dependency_merge_version_nonequals_not_merged(self):
+        expected_dependencies = [
+                Dependency("mypage", "0.5.0"),
+            ]
+        current_dependencies = [
+            Dependency(name="mypage", version="0.5.0", sign=">="),
+        ]
+        new_dependencies = [
+            Dependency(name="mypage", version="0.6.1"),
+        ]
+        self.assert_dependencies_equals(expected_dependencies, ControlParser(u"").get_dependency_merge(
+            current_dependencies = current_dependencies,
+            new_dependencies = new_dependencies,
+        ))
+
     def test_dependency_merge_version_downgrade_not_allowed(self):
         assert_raises(ValueError, ControlParser(u"").get_dependency_merge,
             current_dependencies = [Dependency(name="mypage", version="0.5.0")],
             new_dependencies = [Dependency(name="mypage", version="0.4.9.9")],
         )
+
+    def test_dependency_merge_version_downgrade_not_allowed_with_first_version_longer_than_second(self):
+        assert_raises(ValueError, ControlParser(u"").get_dependency_merge,
+            current_dependencies = [Dependency(name="mypage", version="0.4.9.9.9")],
+            new_dependencies = [Dependency(name="mypage", version="0.4.9.9")],
+        )
+
+    def test_dependency_merge_version_downgrade_allowed_with_first_version_longer_but_lower_than_second(self):
+        self.assert_dependencies_equals([Dependency(name="mypage", version="0.4.9")], ControlParser(u"").get_dependency_merge(
+            current_dependencies = [Dependency(name="mypage", version="0.3.9.8")],
+            new_dependencies = [Dependency(name="mypage", version="0.4.9")],
+        ))
 
     def test_dependency_merge_multiple_version_in_new_deps_raises_value_error(self):
         assert_raises(ValueError, ControlParser(u"").get_dependency_merge,
