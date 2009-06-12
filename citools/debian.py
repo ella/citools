@@ -147,4 +147,6 @@ class ControlParser(object):
         self.control_file += u'\n'
 
 
+def update_dependency_versions(repositories, control_path):
+    pass
 

@@ -10,7 +10,7 @@ from citools.build import copy_images
 class TestCopyImages(object):
 
     def setUp(self):
-        
+
         # create temporary directory and initialize git repository there
         self.repo = mkdtemp(prefix='test_git_')
         self.tmp_static = mkdtemp(prefix='test_static_')
