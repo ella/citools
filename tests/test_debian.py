@@ -217,58 +217,69 @@ Description: metapackage bbb
         # create temporary directory and initialize git repository there
         self.package1_name = 'package1'
         self.repo1 = mkdtemp(prefix='test_git1_')
-        os.chdir(self.repo1)
+        self.create_repository(self.repo1, self.package1_name, '0.1')
+
+        # and another one
+        self.package2_name = 'package2'
+        self.repo2 = mkdtemp(prefix='test_git2_')
+        self.create_repository(self.repo2, self.package2_name, '0.2')
+
+    def create_repository(self, repository_dir, project_name, tag_number):
+        os.chdir(repository_dir)
+
         check_call(['git', 'init'], stdout=PIPE, stdin=PIPE)
+
+        # initial commit
         open('.gitignore', 'w').close()
+
         check_call(['git', 'add', '.'], stdout=PIPE, stdin=PIPE)
         check_call(['git', 'commit', '-m', 'initial'], stdout=PIPE, stdin=PIPE)
-        check_call(['git', 'tag', '-a', 'project1-0.1', '-m', '"project1 tagged 0.1"'], stdout=PIPE, stdin=PIPE)
+
+        # tag it
+        tag_name = '%s-%s' % (project_name, tag_number)
+        tag_message = '"%s tagged %s"' % (project_name, tag_number)
+        check_call(['git', 'tag', '-a', tag_number, '-m', tag_message], stdout=PIPE, stdin=PIPE)
 
         # create debianisation and package in repo
         os.mkdir('debian')
         f = open(os.path.join('debian', 'control'), 'w')
         f.write('''\
-Source: centrum-python-package1
+Source: centrum-python-%(project_name)s
 Section: python
 Priority: optional
 Maintainer: John Doe <john@doe.com>
 Build-Depends: cdbs (>= 0.4.41), debhelper (>= 5.0.37.2), python-dev, python-support (>= 0.3), python-setuptools
 Standards-Version: 3.7.2
 
-Package: centrum-python-package1-aaa
+Package: centrum-python-%(project_name)s-aaa
 Architecture: all
 Depends:
-Description: package1
+Description: %(project_name)s aaa
 
-Package: centrum-python-package1-bbb
+Package: centrum-python-%(project_name)s-bbb
 Architecture: all
 Depends:
-Description: package1
+Description: %(project_name)s bbb
 
-''')
+''' % {'project_name': project_name,})
         f.close()
+
         check_call(['git', 'add', '.'], stdout=PIPE, stdin=PIPE)
         check_call(['git', 'commit', '-m', 'debianisation added'], stdout=PIPE, stdin=PIPE)
 
         os.chdir(self.oldcwd)
 
-        # TODO:
-        # create function from upper code and create second repository
-        # !!! with tag project2-0.2
-        self.package2_name = 'package2'
-        self.repo2 = mkdtemp(prefix='test_git2_')
-
 
     def test_myself(self):
-        '''
-        os.chdir(self.repo1)
-        check_call(['echo', 'AAA',])
-        check_call(['git', '--no-pager', 'log', '-p'])
-        check_call(['git', 'tag'])
-        check_call(['git', 'describe'])
-        check_call(['echo', 'BBB',])
-        os.chdir(self.oldcwd)
-        '''
+        return
+        for repo in (self.repo1, self.repo2):
+            os.chdir(repo)
+            check_call(['echo', 'AAA',])
+            check_call(['git', '--no-pager', 'log', '-p'])
+            check_call(['git', 'tag'])
+            check_call(['git', 'describe'])
+            check_call(['echo', 'BBB',])
+            os.chdir(self.oldcwd)
 
     def test_dependencies_versions_correctly_replaced(self):
         repositories = [
