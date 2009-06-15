@@ -274,17 +274,6 @@ Description: %(project_name)s bbb
         os.chdir(self.oldcwd)
 
 
-    def test_myself(self):
-        return
-        for repo in (self.repo1, self.repo2):
-            os.chdir(repo)
-            check_call(['echo', 'AAA',])
-            check_call(['git', '--no-pager', 'log', '-p'])
-            check_call(['git', 'tag'])
-            check_call(['git', 'describe'])
-            check_call(['echo', 'BBB',])
-            os.chdir(self.oldcwd)
-
     def test_dependencies_versions_correctly_replaced(self):
         repositories = [
             {
@@ -298,6 +287,7 @@ Description: %(project_name)s bbb
                 'package_name': self.package2_name,
             },
         ]
+
         update_dependency_versions(repositories, self.test_control)
 
         expected_control_output = self.control_content_pattern % {
