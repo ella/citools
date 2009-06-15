@@ -7,6 +7,46 @@ from nose.tools import assert_equals, assert_raises
 
 from citools.debian import ControlParser, update_dependency_versions, Dependency
 
+
+master_control_content_pattern = u"""\
+Source: centrum-python-metapackage
+Section: python
+Priority: optional
+Maintainer: John Doe <john@doe.com>
+Build-Depends: cdbs (>= 0.4.41), debhelper (>= 5.0.37.2), python-dev, python-support (>= 0.3), python-setuptools
+Standards-Version: 3.7.2
+
+Package: centrum-python-metapackage-aaa
+Architecture: all
+Depends: centrum-python-%(package1_name)s-aaa (= %(package1_version)s), centrum-python-%(package2_name)s-aaa (= %(package2_version)s)
+Description: metapackage aaa
+
+Package: centrum-python-metapackage-bbb
+Architecture: all
+Depends: centrum-python-%(package1_name)s-bbb (= %(package1_version)s), centrum-python-%(package2_name)s-bbb (= %(package2_version)s)
+Description: metapackage bbb
+"""
+
+slave_control_content_pattern = u"""\
+Source: centrum-python-%(project_name)s
+Section: python
+Priority: optional
+Maintainer: John Doe <john@doe.com>
+Build-Depends: cdbs (>= 0.4.41), debhelper (>= 5.0.37.2), python-dev, python-support (>= 0.3), python-setuptools
+Standards-Version: 3.7.2
+
+Package: centrum-python-%(project_name)s-aaa
+Architecture: all
+Depends:
+Description: %(project_name)s aaa
+
+Package: centrum-python-%(project_name)s-bbb
+Architecture: all
+Depends:
+Description: %(project_name)s bbb
+"""
+
+
 class DependencyTestCase(object):
     def assert_dependencies_equals(self, expect, retrieved):
         """
@@ -26,35 +66,18 @@ class DependencyTestCase(object):
 
 class TestControlParsing(DependencyTestCase):
     def setUp(self):
-        self.test_control = u"""\
-Source: centrum-mypage-meta
-Section: apps
-Priority: optional
-Maintainer: Jan Kral <xxx@xxx.com>
-Uploaders: Richard Fridrich <xxx@xxx.com>, Tomas Hrabinsky <xxx@xxx.com>
-Build-Depends: cdbs (>= 0.4.41), debhelper (>= 5.0.37.2)
-Standards-Version: 3.7.2
+        self.test_control= master_control_content_pattern % {
+            'package1_name': 'package1',
+            'package2_name': 'package2',
+            'package1_version': '0.1.0',
+            'package2_version': '0.2.0',
+        }
 
-# meta package
-Package: centrum-mypage-meta
-Architecture: all
-Depends:
-Description: mypage metapackage
-
-# installable frontend metapackage
-Package: centrum-mypage-fe
-Architecture: all
-Depends: centrum-mypage-icentrum (= 0.5.0.0), centrum-python-mypage (= 0.5.0.0), centrum-djangosherlock-slovniky (= 0.2.0.0), centrum-python-djangosherlock (>= 0.0.1), centrum-mypage-config (= 0.5.0.0), centrum-apache2, centrum-python-django
-Description: xxx
-"""
         self.dependencies_list = [
-            "centrum-mypage-icentrum",
-            "centrum-python-mypage",
-            "centrum-djangosherlock-slovniky",
-            "centrum-python-djangosherlock",
-            "centrum-mypage-config",
-            "centrum-apache2",
-            "centrum-python-django"
+            "centrum-python-package1-aaa",
+            "centrum-python-package2-aaa",
+            "centrum-python-package1-bbb",
+            "centrum-python-package2-bbb",
         ]
         self.dependencies_list.sort()
 
@@ -65,40 +88,26 @@ Description: xxx
         assert_equals(self.dependencies_list, retrieved)
 
     def test_dependency_list_retrieved_from_line(self):
-        assert_equals(["centrum-mypage-icentrum", "centrum-python-mypage"],
-            [i.name for i in ControlParser(self.test_control).parse_dependency_line("Depends: centrum-mypage-icentrum, centrum-python-mypage (= 0.5.0.0)")]
+        assert_equals(["centrum-python-package1-aaa", "centrum-python-package2-aaa"],
+            [i.name for i in ControlParser(self.test_control).parse_dependency_line("Depends: centrum-python-package1-aaa, centrum-python-package2-aaa (= 0.2.0)")]
         )
 
     def test_dependency_list_retrieved_from_line_with_version(self):
-        self.assert_dependencies_equals([Dependency("centrum-python-mypage", "0.5.0.0"), Dependency("centrum-mypage-icentrum")],
-            ControlParser(self.test_control).parse_dependency_line("Depends: centrum-mypage-icentrum, centrum-python-mypage (= 0.5.0.0)"),
+        self.assert_dependencies_equals([Dependency("centrum-python-package2-aaa", "0.2.0"), Dependency("centrum-python-package1-aaa")],
+            ControlParser(self.test_control).parse_dependency_line("Depends: centrum-python-package1-aaa, centrum-python-package2-aaa (= 0.2.0)"),
         )
 
     def test_depencies_replaced(self):
-        self.expected_replaced = u"""\
-Source: centrum-mypage-meta
-Section: apps
-Priority: optional
-Maintainer: Jan Kral <xxx@xxx.com>
-Uploaders: Richard Fridrich <xxx@xxx.com>, Tomas Hrabinsky <xxx@xxx.com>
-Build-Depends: cdbs (>= 0.4.41), debhelper (>= 5.0.37.2)
-Standards-Version: 3.7.2
+        self.expected_replaced = master_control_content_pattern % {
+            'package1_name': 'package1',
+            'package2_name': 'package2',
+            'package1_version': '0.1.0',
+            'package2_version': '0.2.1',
+        }
 
-# meta package
-Package: centrum-mypage-meta
-Architecture: all
-Depends:
-Description: mypage metapackage
-
-# installable frontend metapackage
-Package: centrum-mypage-fe
-Architecture: all
-Depends: centrum-mypage-icentrum (= 0.5.0.0), centrum-python-mypage (= 0.5.0.0), centrum-djangosherlock-slovniky (= 0.5.0), centrum-python-djangosherlock (>= 0.0.1), centrum-mypage-config (= 0.5.0.0), centrum-apache2, centrum-python-django
-Description: xxx
-"""
         parser = ControlParser(self.test_control)
         parser.replace_dependencies(
-            dependencies = [Dependency("centrum-djangosherlock-slovniky", "0.5.0")]
+            dependencies = [Dependency("centrum-python-package2-aaa", "0.2.1"), Dependency("centrum-python-package2-bbb", "0.2.1"),]
         )
 
         assert_equals(self.expected_replaced, parser.control_file)
@@ -204,27 +213,9 @@ class TestUpdateDependencyVersions(object):
         self.create_repository(self.repo2, self.package2_name, '0.2')
 
         # create testing control file
-        self.tmp_control_dir = mkdtemp(prefix='test_control_')
-        self.test_control = os.path.join(self.tmp_control_dir, 'control')
-        self.control_content_pattern = u"""\
-Source: centrum-python-metapackage
-Section: python
-Priority: optional
-Maintainer: John Doe <john@doe.com>
-Build-Depends: cdbs (>= 0.4.41), debhelper (>= 5.0.37.2), python-dev, python-support (>= 0.3), python-setuptools
-Standards-Version: 3.7.2
-
-Package: centrum-python-metapackage-aaa
-Architecture: all
-Depends: centrum-python-%(package1_name)s-aaa (= %(package1_version)s), centrum-python-%(package2_name)s-aaa (= %(package2_version)s)
-Description: metapackage aaa
-
-Package: centrum-python-metapackage-bbb
-Architecture: all
-Depends: centrum-python-%(package1_name)s-bbb (= %(package1_version)s), centrum-python-%(package2_name)s-bbb (= %(package2_version)s)
-Description: metapackage bbb
-"""
-        self.control_content = self.control_content_pattern % {
+        self.control_dir = mkdtemp(prefix='test_control_')
+        self.test_control = os.path.join(self.control_dir, 'control')
+        self.control_content = master_control_content_pattern % {
             'package1_name': self.package1_name,
             'package2_name': self.package2_name,
             'package1_version': '0.1.0',
@@ -253,24 +244,7 @@ Description: metapackage bbb
         # create debianisation and package in repo
         os.mkdir('debian')
         f = open(os.path.join('debian', 'control'), 'w')
-        f.write(u"""\
-Source: centrum-python-%(project_name)s
-Section: python
-Priority: optional
-Maintainer: John Doe <john@doe.com>
-Build-Depends: cdbs (>= 0.4.41), debhelper (>= 5.0.37.2), python-dev, python-support (>= 0.3), python-setuptools
-Standards-Version: 3.7.2
-
-Package: centrum-python-%(project_name)s-aaa
-Architecture: all
-Depends:
-Description: %(project_name)s aaa
-
-Package: centrum-python-%(project_name)s-bbb
-Architecture: all
-Depends:
-Description: %(project_name)s bbb
-""" % {'project_name': project_name,})
+        f.write(slave_control_content_pattern % {'project_name': project_name,})
         f.close()
 
         check_call(['git', 'add', '.'], stdout=PIPE, stdin=PIPE)
@@ -295,7 +269,7 @@ Description: %(project_name)s bbb
 
         update_dependency_versions(repositories, self.test_control)
 
-        expected_control_output = self.control_content_pattern % {
+        expected_control_output = master_control_content_pattern % {
             'package1_name': self.package1_name,
             'package2_name': self.package2_name,
             'package1_version': '0.1.1',
@@ -308,7 +282,7 @@ Description: %(project_name)s bbb
     def tearDown(self):
         os.chdir(self.oldcwd)
 
-        rmtree(self.tmp_control_dir)
+        rmtree(self.control_dir)
         rmtree(self.repo1)
         rmtree(self.repo2)
 
