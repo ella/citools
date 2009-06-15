@@ -1,4 +1,5 @@
 from citools.version import get_git_describe
+from citools.version import compute_version
 import os
 import re
 from shutil import rmtree
@@ -59,12 +60,7 @@ class ControlParser(object):
     def __init__(self, control_file):
         super(ControlParser, self).__init__()
 
-        if isinstance(control_file, str) or isinstance(control_file, unicode):
-            self.control_file = control_file
-        else:
-            f = open(control_file)
-            self.control_file = f.read()
-            f.close()
+        self.control_file = control_file
 
     def parse_dependency_line(self, line):
         """ Return dependency from Depends: line """
@@ -167,13 +163,13 @@ class ControlParser(object):
 
 def get_new_dependencies(repository):
     repo = fetch_repository(repository=repository['url'], branch=repository['branch'])
-    parser = ControlParser(os.path.join(repo, 'debian', 'control'))
+    parser = ControlParser(open(os.path.join(repo, 'debian', 'control')).read())
     packages = parser.get_packages()
-    version = get_git_describe(repository_directory=repo, fix_environment=True)
 
-    deps = [dict(package, version) for package in packages]
+    version = ".".join(map(str, compute_version(get_git_describe(repository_directory=repo, fix_environment=True))))
+    deps = [Dependency(package, version) for package in packages]
+
     rmtree(repo)
-
     return deps
 
 
@@ -187,7 +183,10 @@ def update_dependency_versions(repositories, control_path):
     for repository in repositories:
         deps = get_new_dependencies(repository)
         deps_from_repositories.extend(deps)
-        
+
     meta_parser.replace_dependencies(deps_from_repositories)
-    return meta_parser.control_file
+
+    f = open(control_path, 'w')
+    f.write(meta_parser.control_file)
+    f.close()
 
