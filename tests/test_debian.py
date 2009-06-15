@@ -1,5 +1,4 @@
-import os, os.path
-from StringIO import StringIO
+import os
 from shutil import rmtree
 from subprocess import check_call, PIPE
 from tempfile import mkdtemp
@@ -115,6 +114,12 @@ Description: xxx
         assert_equals(">=",  dep.sign)
         # sanity check
         assert_equals("0.1",  dep.version)
+
+    def test_packages_retrieved(self):
+        parser = ControlParser(self.test_control)
+        packages = ['centrum-mypage-meta', 'centrum-mypage-fe']
+
+        assert_equals(packages, parser.get_packages())
 
 class TestDependency(DependencyTestCase):
         

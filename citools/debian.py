@@ -1,4 +1,9 @@
+from citools.version import get_git_describe
+import os
 import re
+from shutil import rmtree
+
+from citools.git import fetch_repository
 
 __all__ = ("Dependency", "ControlParser")
 
@@ -54,7 +59,12 @@ class ControlParser(object):
     def __init__(self, control_file):
         super(ControlParser, self).__init__()
 
-        self.control_file = control_file
+        if isinstance(control_file, str) or isinstance(control_file, unicode):
+            self.control_file = control_file
+        else:
+            f = open(control_file)
+            self.control_file = f.read()
+            f.close()
 
     def parse_dependency_line(self, line):
         """ Return dependency from Depends: line """
@@ -78,6 +88,14 @@ class ControlParser(object):
             if line.startswith('Depends:'):
                 dependencies.extend(self.parse_dependency_line(line))
         return dependencies
+
+    def get_packages(self):
+        """ Return list of packages present in file """
+        packages = []
+        for line in self.control_file.splitlines():
+            if line.startswith('Package:'):
+                packages.extend([i.strip() for i in line[len('Package:'):].split(',')])
+        return packages
 
     def check_downgrade(self, current_version, new_version):
         """
@@ -147,6 +165,29 @@ class ControlParser(object):
         self.control_file += u'\n'
 
 
+def get_new_dependencies(repository):
+    repo = fetch_repository(repository=repository['url'], branch=repository['branch'])
+    parser = ControlParser(os.path.join(repo, 'debian', 'control'))
+    packages = parser.get_packages()
+    version = get_git_describe(repository_directory=repo, fix_environment=True)
+
+    deps = [dict(package, version) for package in packages]
+    rmtree(repo)
+
+    return deps
+
+
 def update_dependency_versions(repositories, control_path):
-    pass
+    f = open(control_path)
+    meta_parser = ControlParser(f.read())
+    f.close()
+
+    deps_from_repositories = []
+
+    for repository in repositories:
+        deps = get_new_dependencies(repository)
+        deps_from_repositories.extend(deps)
+        
+    meta_parser.replace_dependencies(deps_from_repositories)
+    return meta_parser.control_file
 
