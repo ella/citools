@@ -2,7 +2,7 @@ from tempfile import mkdtemp
 import os
 from subprocess import check_call, PIPE
 
-def fetch_repository(repository, workdir, branch=None):
+def fetch_repository(repository, workdir=None, branch=None):
     """
     Fetch repository inside a workdir. Return filesystem path of newly created dir.
     """
