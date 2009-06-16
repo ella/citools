@@ -23,7 +23,7 @@ Description: metapackage aaa
 
 Package: centrum-python-metapackage-bbb
 Architecture: all
-Depends: centrum-python-%(package1_name)s-bbb (= %(package1_version)s), centrum-python-%(package2_name)s-bbb (= %(package2_version)s)
+Depends: centrum-python-%(package1_name)s-bbb (= %(package1_version)s), centrum-python-%(package2_name)s-bbb (= %(package2_version)s), centrum-python-metapackage-aaa (= %(metapackage_version)s)
 Description: metapackage bbb
 """
 
@@ -71,6 +71,7 @@ class TestControlParsing(DependencyTestCase):
             'package2_name': 'package2',
             'package1_version': '0.1.0',
             'package2_version': '0.2.0',
+            'metapackage_version': '0.0.0',
         }
 
         self.dependencies_list = [
@@ -78,6 +79,7 @@ class TestControlParsing(DependencyTestCase):
             "centrum-python-package2-aaa",
             "centrum-python-package1-bbb",
             "centrum-python-package2-bbb",
+            "centrum-python-metapackage-aaa",
         ]
         self.dependencies_list.sort()
 
@@ -103,6 +105,7 @@ class TestControlParsing(DependencyTestCase):
             'package2_name': 'package2',
             'package1_version': '0.1.0',
             'package2_version': '0.2.1',
+            'metapackage_version': '0.0.0',
         }
 
         parser = ControlParser(self.test_control)
@@ -220,6 +223,7 @@ class TestUpdateDependencyVersions(object):
             'package2_name': self.package2_name,
             'package1_version': '0.1.0',
             'package2_version': '0.2.0',
+            'metapackage_version': '0.0.0',
         }
         f = open(self.test_control, 'w')
         f.write(self.control_content)
@@ -274,6 +278,7 @@ class TestUpdateDependencyVersions(object):
             'package2_name': self.package2_name,
             'package1_version': '0.1.1',
             'package2_version': '0.2.1',
+            'metapackage_version': '0.0.0', # TODO: not true - it must be calculated via dependencies
         }
 
         assert_equals(expected_control_output, open(self.test_control).read())
