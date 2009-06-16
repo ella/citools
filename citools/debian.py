@@ -16,6 +16,9 @@ __all__ = ("Dependency", "ControlParser")
 
 class BuildDebianPackage(config):
     """ After debianization is in place, build a package for it """
+
+    description = "run debian build wrapper dpkg-buildpackage"
+
     user_options = [
     ]
 

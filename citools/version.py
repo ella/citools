@@ -195,6 +195,9 @@ def compute_meta_version(dependency_repositories):
     return version
 
 class GitSetMetaVersion(config):
+
+    description = "calculate and set version from all dependencies"
+
     user_options = [
     ]
 
@@ -224,6 +227,9 @@ class GitSetMetaVersion(config):
             raise
 
 class GitSetVersion(config):
+
+    description = "calculate version from git describe"
+
     user_options = [
     ]
 
@@ -250,6 +256,9 @@ class GitSetVersion(config):
             raise
 
 class UpdateDebianVersion(config):
+
+    description = "copy version string to debian changelog"
+
     user_options = [
     ]
 
