@@ -1,15 +1,18 @@
-from distutils.command.config import config
 import os
 import re
 from shutil import rmtree
 from subprocess import check_call, PIPE
+
+from distutils.command.config import config
 
 from citools.version import get_git_describe
 from citools.version import compute_version
 
 from citools.git import fetch_repository
 
+
 __all__ = ("Dependency", "ControlParser")
+
 
 class BuildDebianPackage(config):
     """ After debianization is in place, build a package for it """
@@ -23,7 +26,7 @@ class BuildDebianPackage(config):
         pass
 
     def run(self):
-        check_call(["fakeroot" ,"debian/rules", "binary"], stdout=PIPE)
+        check_call(['dpkg-buildpackage', '-rfakeroot', '-us', '-uc'], stdout=PIPE)
 
 
 class Dependency(object):
