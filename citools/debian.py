@@ -214,3 +214,19 @@ def update_dependency_versions(repositories, control_path):
     f.write(meta_parser.control_file)
     f.close()
 
+class UpdateDependencyVersions(config):
+
+    description = "parse and update versions in debian control file"
+
+    user_options = [
+    ]
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        update_dependency_versions(self.distribution.dependencies_git_repositories, os.path.join('debian', 'control'))
+
