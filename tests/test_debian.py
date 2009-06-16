@@ -126,7 +126,7 @@ class TestControlParsing(DependencyTestCase):
 
     def test_packages_retrieved(self):
         parser = ControlParser(self.test_control)
-        packages = ['centrum-mypage-meta', 'centrum-mypage-fe']
+        packages = [u'centrum-python-metapackage-aaa', u'centrum-python-metapackage-bbb']
 
         assert_equals(packages, parser.get_packages())
 
