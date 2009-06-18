@@ -3,7 +3,7 @@ from shutil import rmtree
 from subprocess import check_call, PIPE
 from tempfile import mkdtemp
 
-from nose.tools import assert_equals, assert_raises
+from nose.tools import assert_equals, assert_raises, assert_true
 
 from citools.debian import ControlParser, update_dependency_versions, Dependency
 
@@ -71,7 +71,7 @@ class TestControlParsing(DependencyTestCase):
             'package2_name': 'package2',
             'package1_version': '0.1.0',
             'package2_version': '0.2.0',
-            'metapackage_version': '0.3.0',
+            'metapackage_version': '0.10.0',
         }
 
         self.dependencies_list = [
@@ -105,7 +105,7 @@ class TestControlParsing(DependencyTestCase):
             'package2_name': 'package2',
             'package1_version': '0.1.0',
             'package2_version': '0.2.1',
-            'metapackage_version': '0.3.0',
+            'metapackage_version': '0.10.0',
         }
 
         parser = ControlParser(self.test_control)
@@ -132,6 +132,11 @@ class TestControlParsing(DependencyTestCase):
         packages = [u'centrum-python-metapackage-aaa', u'centrum-python-metapackage-bbb']
 
         assert_equals(packages, parser.get_packages())
+
+    def test_checkdowngrade_not_raises_expeption_on_correct_input(self):
+        parser = ControlParser(self.test_control)
+        assert_true(parser.check_downgrade('0.5.0.0', '0.17.0.114'))
+
 
 class TestDependency(DependencyTestCase):
         
@@ -218,7 +223,7 @@ class TestUpdateDependencyVersions(object):
         # create meta repository
         self.metapackage_name = 'metapackage'
         self.metarepo = mkdtemp(prefix='test_git_meta_')
-        self.create_repository(self.metarepo, self.metapackage_name, '0.3')
+        self.create_repository(self.metarepo, self.metapackage_name, '0.10')
 
         # create testing control file
         self.test_control = os.path.join(self.metarepo, 'debian', 'control')
@@ -227,7 +232,7 @@ class TestUpdateDependencyVersions(object):
             'package2_name': self.package2_name,
             'package1_version': '0.1.0',
             'package2_version': '0.2.0',
-            'metapackage_version': '0.3.0',
+            'metapackage_version': '0.10.0',
         }
         f = open(self.test_control, 'w')
         f.write(self.control_content)
@@ -288,7 +293,7 @@ class TestUpdateDependencyVersions(object):
             'package2_name': self.package2_name,
             'package1_version': '0.1.1',
             'package2_version': '0.2.1',
-            'metapackage_version': '0.6.4',
+            'metapackage_version': '0.15.4',
         }
 
         assert_equals(expected_control_output, open(self.test_control).read())
