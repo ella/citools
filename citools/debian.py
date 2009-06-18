@@ -232,8 +232,6 @@ def update_dependency_versions(repositories, control_path, workdir=None):
     # deps are my actual version; we want to update it to metaversion
     for dep in deps:
         dep.version = meta_version_string
-        print dep.version
-        print dep.name
     deps_from_repositories.extend(deps)
 
     meta_parser.replace_dependencies(deps_from_repositories)
