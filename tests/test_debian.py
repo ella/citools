@@ -293,7 +293,7 @@ class TestUpdateDependencyVersions(object):
             'package2_name': self.package2_name,
             'package1_version': '0.1.1',
             'package2_version': '0.2.1',
-            'metapackage_version': '0.15.4',
+            'metapackage_version': '0.13.4',
         }
 
         assert_equals(expected_control_output, open(self.test_control).read())
