@@ -17,7 +17,7 @@ using git describe for it now)
 
 def compute_version(string):
     """ Return VERSION tuple, computed from git describe output """
-    match = re.match("(?P<bordel>[a-z0-9\-\_]*)(?P<arch>\d\.\d{1})(?P<rest>.*)", string)
+    match = re.match("(?P<bordel>[a-z0-9\-\_]*)(?P<arch>\d+\.\d+)(?P<rest>.*)", string)
 
     if not match or not match.groupdict().has_key('arch'):
         raise ValueError(u"Something appears to be a scheme version, but it's not; failing")

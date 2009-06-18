@@ -41,6 +41,9 @@ class TestVersioning(TestCase):
     def test_project_with_digit_in_name(self):
         self.assertEquals((9, 7, 3, 45, 532, 11, 44), compute_version('log4j-9.7.3.45.532.11-44-g1754c3f'))
 
+    def test_multiple_digit_versin(self):
+        self.assertEquals((0, 10, 2), compute_version('log4j-0.10-2-gbb6aff8'))
+
     def test_version_replacing_three_digits(self):
         source = StringIO("""arakadabra
 blah blah
