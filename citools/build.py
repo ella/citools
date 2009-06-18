@@ -17,6 +17,9 @@ def copy_images(repositories, static_dir):
         rmtree(dir)
     
 class CopyDependencyImages(config):
+
+    description = "copy all dependency static files into one folder"
+
     user_options = [
     ]
 

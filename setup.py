@@ -50,6 +50,8 @@ setup(
             'compute_version_git = citools.version:GitSetVersion',
             'compute_version_meta_git = citools.version:GitSetMetaVersion',
             'update_debian_version = citools.version:UpdateDebianVersion',
+            'bdist_deb = citools.debian:BuildDebianPackage',
+            'update_dependency_versions = citools.debian:UpdateDependencyVersions',
             'copy_dependency_images = citools.build:CopyDependencyImages',
         ],
         "distutils.setup_keywords": [

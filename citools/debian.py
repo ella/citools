@@ -1,12 +1,36 @@
-from citools.version import get_git_describe
-from citools.version import compute_version
 import os
 import re
 from shutil import rmtree
+from subprocess import check_call, PIPE
+
+from distutils.command.config import config
+
+from citools.version import get_git_describe
+from citools.version import compute_version
 
 from citools.git import fetch_repository
 
+
 __all__ = ("Dependency", "ControlParser")
+
+
+class BuildDebianPackage(config):
+    """ After debianization is in place, build a package for it """
+
+    description = "run debian build wrapper dpkg-buildpackage"
+
+    user_options = [
+    ]
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        check_call(['dpkg-buildpackage', '-rfakeroot', '-us', '-uc'], stdout=PIPE)
+
 
 class Dependency(object):
     """
@@ -189,4 +213,20 @@ def update_dependency_versions(repositories, control_path):
     f = open(control_path, 'w')
     f.write(meta_parser.control_file)
     f.close()
+
+class UpdateDependencyVersions(config):
+
+    description = "parse and update versions in debian control file"
+
+    user_options = [
+    ]
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        update_dependency_versions(self.distribution.dependencies_git_repositories, os.path.join('debian', 'control'))
 

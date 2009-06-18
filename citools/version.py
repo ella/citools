@@ -195,6 +195,9 @@ def compute_meta_version(dependency_repositories):
     return version
 
 class GitSetMetaVersion(config):
+
+    description = "calculate and set version from all dependencies"
+
     user_options = [
     ]
 
@@ -224,6 +227,9 @@ class GitSetMetaVersion(config):
             raise
 
 class GitSetVersion(config):
+
+    description = "calculate version from git describe"
+
     user_options = [
     ]
 
@@ -241,6 +247,7 @@ class GitSetVersion(config):
             current_git_version = get_git_describe()
             version = compute_version(current_git_version)
             replace_init(version, self.distribution.get_name())
+            replace_version_in_file(version, 'setup.py')
             version_str = '.'.join(map(str, version))
             self.distribution.metadata.version = version_str
             print "Current version is %s" % version_str
@@ -250,6 +257,9 @@ class GitSetVersion(config):
             raise
 
 class UpdateDebianVersion(config):
+
+    description = "copy version string to debian changelog"
+
     user_options = [
     ]
 
