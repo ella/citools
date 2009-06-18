@@ -120,8 +120,8 @@ class ControlParser(object):
         """
         Raise ValueError if new_version is lower then current_version
         """
-        curr_tuple = current_version.split(".")
-        new_tuple = new_version.split(".")
+        curr_tuple = map(int, current_version.split("."))
+        new_tuple = map(int, new_version.split("."))
 
 
         for i in xrange(0, len(curr_tuple)):

@@ -133,7 +133,7 @@ class TestControlParsing(DependencyTestCase):
 
         assert_equals(packages, parser.get_packages())
 
-    def test_checkdowngrade_not_raises_expeption_on_correct_input(self):
+    def test_upgrade_to_multicipher_version_passes_downgrade_check(self):
         parser = ControlParser(self.test_control)
         assert_true(parser.check_downgrade('0.5.0.0', '0.17.0.114'))
 
