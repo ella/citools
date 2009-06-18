@@ -47,7 +47,7 @@ class TestCopyImages(object):
 
     def test_dependency_without_static_is_ommited(self):
         # create temporary directory and initialize git repository there
-        tmp_repo = mkdtemp(prefix='test_git_')
+        tmp_repo = mkdtemp(prefix='test_git_', dir=self.repo)
         check_call(['git', 'init'], stdout=PIPE, stdin=PIPE, cwd=tmp_repo)
 
         # commit something empty
