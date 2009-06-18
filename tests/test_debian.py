@@ -281,7 +281,7 @@ class TestUpdateDependencyVersions(object):
             },
         ]
 
-        update_dependency_versions(repositories, self.test_control)
+        update_dependency_versions(repositories, self.test_control, workdir=self.metarepo)
 
         expected_control_output = master_control_content_pattern % {
             'package1_name': self.package1_name,

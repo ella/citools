@@ -180,8 +180,13 @@ def replace_version_in_file(version, file):
     file.writelines(content)
     file.close()
 
-def compute_meta_version(dependency_repositories):
-    version = compute_version(get_git_describe())
+def compute_meta_version(dependency_repositories, workdir=None):
+    if workdir:
+        describe = get_git_describe(repository_directory=workdir, fix_environment=True)
+    else:
+        describe = get_git_describe()
+    version = compute_version(describe)
+    
     repositories_dir = mkdtemp(dir=os.curdir, prefix="build-repository-dependencies-")
     for repository_dict in dependency_repositories:
         if repository_dict.has_key('branch'):

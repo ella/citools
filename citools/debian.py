@@ -5,8 +5,7 @@ from subprocess import check_call, PIPE
 
 from distutils.command.config import config
 
-from citools.version import get_git_describe
-from citools.version import compute_version
+from citools.version import get_git_describe, compute_version, compute_meta_version
 
 from citools.git import fetch_repository
 
@@ -185,19 +184,32 @@ class ControlParser(object):
         self.control_file += u'\n'
 
 
-def get_new_dependencies(repository):
-    repo = fetch_repository(repository=repository['url'], branch=repository['branch'])
-    parser = ControlParser(open(os.path.join(repo, 'debian', 'control')).read())
+def fetch_new_dependencies(repository):
+    repo = fetch_repository(
+        repository=repository['url'], branch=repository['branch']
+    )
+    deps = get_new_dependencies(repo)
+    rmtree(repo)
+
+    return deps
+
+def get_new_dependencies(dir):
+    parser = ControlParser(open(os.path.join(dir, 'debian', 'control')).read())
     packages = parser.get_packages()
 
-    version = ".".join(map(str, compute_version(get_git_describe(repository_directory=repo, fix_environment=True))))
+    version = ".".join(map(str, compute_version(get_git_describe(repository_directory=dir, fix_environment=True))))
     deps = [Dependency(package, version) for package in packages]
 
-    rmtree(repo)
     return deps
 
 
-def update_dependency_versions(repositories, control_path):
+def update_dependency_versions(repositories, control_path, workdir=None):
+    """
+    Update control_path (presumably debian/control) with package version collected
+    by parsing debian/controls in dependencies.
+    Also updates with change of my path.
+    """
+    workdir = workdir or os.curdir
     f = open(control_path)
     meta_parser = ControlParser(f.read())
     f.close()
@@ -205,8 +217,24 @@ def update_dependency_versions(repositories, control_path):
     deps_from_repositories = []
 
     for repository in repositories:
-        deps = get_new_dependencies(repository)
+        deps = fetch_new_dependencies(repository)
         deps_from_repositories.extend(deps)
+
+
+    #FIXME: This will download deps again, fix it
+    meta_version = compute_meta_version(repositories, workdir=workdir)
+    meta_version_string = ".".join(map(str, meta_version))
+    
+
+    # also add myself as dependency
+    deps = get_new_dependencies(workdir)
+
+    # deps are my actual version; we want to update it to metaversion
+    for dep in deps:
+        dep.version = meta_version_string
+        print dep.version
+        print dep.name
+    deps_from_repositories.extend(deps)
 
     meta_parser.replace_dependencies(deps_from_repositories)
 
