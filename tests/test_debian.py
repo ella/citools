@@ -71,7 +71,7 @@ class TestControlParsing(DependencyTestCase):
             'package2_name': 'package2',
             'package1_version': '0.1.0',
             'package2_version': '0.2.0',
-            'metapackage_version': '0.0.0',
+            'metapackage_version': '0.3.0',
         }
 
         self.dependencies_list = [
@@ -105,7 +105,7 @@ class TestControlParsing(DependencyTestCase):
             'package2_name': 'package2',
             'package1_version': '0.1.0',
             'package2_version': '0.2.1',
-            'metapackage_version': '0.0.0',
+            'metapackage_version': '0.3.0',
         }
 
         parser = ControlParser(self.test_control)
@@ -215,19 +215,29 @@ class TestUpdateDependencyVersions(object):
         self.repo2 = mkdtemp(prefix='test_git2_')
         self.create_repository(self.repo2, self.package2_name, '0.2')
 
+        # create meta repository
+        self.metapackage_name = 'metapackage'
+        self.metarepo = mkdtemp(prefix='test_git_meta_')
+        self.create_repository(self.metarepo, self.metapackage_name, '0.3')
+
         # create testing control file
-        self.control_dir = mkdtemp(prefix='test_control_')
-        self.test_control = os.path.join(self.control_dir, 'control')
+        self.test_control = os.path.join(self.metarepo, 'debian', 'control')
         self.control_content = master_control_content_pattern % {
             'package1_name': self.package1_name,
             'package2_name': self.package2_name,
             'package1_version': '0.1.0',
             'package2_version': '0.2.0',
-            'metapackage_version': '0.0.0',
+            'metapackage_version': '0.3.0',
         }
         f = open(self.test_control, 'w')
         f.write(self.control_content)
         f.close()
+
+        # and commit new control file
+        os.chdir(self.metarepo)
+        check_call(['git', 'add', '.'], stdout=PIPE, stdin=PIPE)
+        check_call(['git', 'commit', '-m', 'meta control file'], stdout=PIPE, stdin=PIPE)
+        os.chdir(self.oldcwd)
 
     def create_repository(self, repository_dir, project_name, tag_number):
         os.chdir(repository_dir)
@@ -278,7 +288,7 @@ class TestUpdateDependencyVersions(object):
             'package2_name': self.package2_name,
             'package1_version': '0.1.1',
             'package2_version': '0.2.1',
-            'metapackage_version': '0.0.0', # TODO: not true - it must be calculated via dependencies
+            'metapackage_version': '0.6.4',
         }
 
         assert_equals(expected_control_output, open(self.test_control).read())
@@ -287,7 +297,7 @@ class TestUpdateDependencyVersions(object):
     def tearDown(self):
         os.chdir(self.oldcwd)
 
-        rmtree(self.control_dir)
         rmtree(self.repo1)
         rmtree(self.repo2)
+        rmtree(self.metarepo)
 
