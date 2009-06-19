@@ -28,7 +28,7 @@ class BuildDebianPackage(config):
         pass
 
     def run(self):
-        check_call(['dpkg-buildpackage', '-rfakeroot', '-us', '-uc'], stdout=PIPE)
+        check_call(['dpkg-buildpackage', '-rfakeroot', '-us', '-uc'])
 
 
 class Dependency(object):
