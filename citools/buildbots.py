@@ -115,7 +115,7 @@ def buildbot_ping_git(host, port, branch):
         change = {
             'revision': "FETCH_HEAD",
             'who' : 'BuildBot',
-            'comments': "Dependency changed, sending dummy commit",
+            'comments': "Dependency changed, sending dummy commit notification",
             'branch': branch,
             'category' : 'auto',
             'files' : [
@@ -133,9 +133,6 @@ def buildbot_ping_git(host, port, branch):
     d.addBoth(cleanup)
 
     reactor.run()
-
-
-
 
 
 class BuildbotPingGit(config):

@@ -140,32 +140,6 @@ def get_git_head_hash(fix_environment=False, repository_directory=None):
                 del os.environ['GIT_DIR']
 
 
-def update_debianization(version):
-    """
-    Update Debian's changelog to current version and append "dummy" message.
-    """
-    # we need to add string version in the whole method
-    if isinstance(version, (tuple, list)):
-        version = '.'.join(map(str, version))
-    changelog = 'debian/changelog'
-    hash = get_git_head_hash()
-    message = "Version %(version)s was build from revision %(hash)s by automated build system" % {
-                      'version' : version,
-                      'hash' : hash
-    }
-
-    proc = Popen3('dch --changelog %(changelog)s --newversion %(version)s "%(message)s"' % {
-                 'changelog' : changelog,
-                 'version' : version,
-                 'message' : message,
-           })
-
-    return_code = proc.wait()
-    if return_code == 0:
-        return proc.fromchild.read().strip()
-    else:
-        raise ValueError("Updating debianization failed with exit code %s" % return_code)
-
 def replace_init(version, name):
     """ Update VERSION attribute in $name/__init__.py module """
     file = os.path.join(name, '__init__.py')
@@ -256,28 +230,6 @@ class GitSetVersion(config):
             version_str = '.'.join(map(str, version))
             self.distribution.metadata.version = version_str
             print "Current version is %s" % version_str
-        except Exception:
-            import traceback
-            traceback.print_exc()
-            raise
-
-class UpdateDebianVersion(config):
-
-    description = "copy version string to debian changelog"
-
-    user_options = [
-    ]
-
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        """ Compute current version and update debian version accordingly """
-        try:
-            update_debianization(self.distribution.get_version())
         except Exception:
             import traceback
             traceback.print_exc()

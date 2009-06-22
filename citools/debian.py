@@ -1,19 +1,27 @@
 import os
+from popen2 import Popen3
 import re
 from shutil import rmtree
 from subprocess import check_call
 
-from distutils.command.config import config
-
-from citools.version import get_git_describe, compute_version, compute_meta_version
+from distutils.core import Command
+from citools.version import get_git_describe, compute_version, compute_meta_version, get_git_head_hash
 
 from citools.git import fetch_repository
 
 
-__all__ = ("Dependency", "ControlParser")
+__all__ = (
+    "Dependency", "ControlParser",
+    "BuildDebianPackage", "UpdateDebianVersion"
+    "CreateDebianPackage", "CreateDebianMetaPackage",
+)
 
 
-class BuildDebianPackage(config):
+def return_true(*args, **kwargs):
+    return True
+
+
+class BuildDebianPackage(Command):
     """ After debianization is in place, build a package for it """
 
     description = "run debian build wrapper dpkg-buildpackage"
@@ -240,7 +248,7 @@ def update_dependency_versions(repositories, control_path, workdir=None):
     f.write(meta_parser.control_file)
     f.close()
 
-class UpdateDependencyVersions(config):
+class UpdateDependencyVersions(Command):
 
     description = "parse and update versions in debian control file"
 
@@ -256,3 +264,96 @@ class UpdateDependencyVersions(config):
     def run(self):
         update_dependency_versions(self.distribution.dependencies_git_repositories, os.path.join('debian', 'control'))
 
+def update_debianization(version):
+    """
+    Update Debian's changelog to current version and append "dummy" message.
+    """
+    # we need to add string version in the whole method
+    if isinstance(version, (tuple, list)):
+        version = '.'.join(map(str, version))
+    changelog = 'debian/changelog'
+    hash = get_git_head_hash()
+    message = "Version %(version)s was build from revision %(hash)s by automated build system" % {
+                      'version' : version,
+                      'hash' : hash
+    }
+
+    proc = Popen3('dch --changelog %(changelog)s --newversion %(version)s "%(message)s"' % {
+                 'changelog' : changelog,
+                 'version' : version,
+                 'message' : message,
+           })
+
+    return_code = proc.wait()
+    if return_code == 0:
+        return proc.fromchild.read().strip()
+    else:
+        raise ValueError("Updating debianization failed with exit code %s" % return_code)
+
+
+class UpdateDebianVersion(Command):
+
+    description = "copy version string to debian changelog"
+
+    user_options = [
+    ]
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        print 'yo'
+        """ Compute current version and update debian version accordingly """
+        try:
+            update_debianization(self.distribution.get_version())
+        except Exception:
+            import traceback
+            traceback.print_exc()
+            raise
+
+class CreateDebianPackage(Command):
+    description = "run what's needed to build debian package"
+
+    user_options = [
+    ]
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        for cmd_name in self.get_sub_commands():
+            self.run_command(cmd_name)
+
+    sub_commands = [
+        ("update_debian_version", None),
+        ("bdist_deb", None),
+    ]
+
+
+
+class CreateDebianMetaPackage(Command):
+    description = "run what's needed to build debian meta package"
+
+    user_options = [
+    ]
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        pass
+
+    sub_commands = [
+        ("update_debian_version", None),
+        ("update_dependency_versions", None),
+        ("bdist_deb", None),
+    ]
