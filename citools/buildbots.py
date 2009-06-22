@@ -74,7 +74,7 @@ class BuildDebianPackage(CriticalShellCommand):
     name = "build debian package"
     description = ["building debian package"]
     descriptionDone = ["package build"]
-    command = ["python", "setup.py", "bdist_deb"]
+    command = ["python", "setup.py", "create_debian_package"]
 
 class GitPingMaster(CriticalShellCommand):
     name = "ping another master"
