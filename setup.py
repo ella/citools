@@ -33,6 +33,12 @@ setup(
 
     include_package_data = True,
 
+#    buildbot_meta_master = {
+#        'host' : 'cnt-buildmaster.dev.chservices.cz',
+#        'port' : 9996,
+#        'branch' : 'master',
+#    },
+
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
@@ -53,9 +59,11 @@ setup(
             'bdist_deb = citools.debian:BuildDebianPackage',
             'update_dependency_versions = citools.debian:UpdateDependencyVersions',
             'copy_dependency_images = citools.build:CopyDependencyImages',
+            'buildbot_ping_git = citools.buildbots:BuildbotPingGit',
         ],
         "distutils.setup_keywords": [
             "dependencies_git_repositories = citools.version:validate_repositories",
+            "buildbot_meta_master = citools.buildbots:validate_meta_buildbot",
         ],
     },
     install_requires = [

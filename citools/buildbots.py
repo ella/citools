@@ -1,3 +1,6 @@
+from distutils.command.config import config
+import logging
+
 from buildbot.steps import shell
 
 __all__ = (
@@ -72,3 +75,89 @@ class BuildDebianPackage(CriticalShellCommand):
     description = ["building debian package"]
     descriptionDone = ["package build"]
     command = ["python", "setup.py", "bdist_deb"]
+
+class GitPingMaster(CriticalShellCommand):
+    name = "ping another master"
+    description = ["pinging another master"]
+    descriptionDone = ["master ping'd"]
+    command = ["python", "setup.py", "buildbot_ping_git"]
+
+
+def validate_meta_buildbot(dist, attr, value):
+    pass
+
+def buildbot_ping_git(host, port, branch):
+    """
+    Ping our meta repository to emulate new change and trigger build suite.
+
+    We don't want to download meta repository to get informations, so we create
+    fakes with tip et al.
+    """
+    from twisted.spread import pb
+    from twisted.cred import credentials
+    from twisted.internet import reactor
+
+    master = "%s:%s" % (host, port)
+
+    f = pb.PBClientFactory()
+    d = f.login(credentials.UsernamePassword("change", "changepw"))
+    reactor.connectTCP(host, port, f)
+
+    def connect_failed(error):
+        logging.error("Could not connect to %s: %s"
+            % (master, error.getErrorMessage()))
+        return error
+
+    def cleanup(res):
+        reactor.stop()
+
+    def add_change(remote, branch):
+        change = {
+            'revision': "FETCH_HEAD",
+            'who' : 'BuildBot',
+            'comments': "Dependency changed, sending dummy commit",
+            'branch': branch,
+            'category' : 'auto',
+            'files' : [
+                'CHANGELOG'
+            ],
+        }
+        d = remote.callRemote('addChange', change)
+        return d
+
+    def connected(remote, branch):
+        return add_change(remote, branch)
+
+    d.addErrback(connect_failed)
+    d.addCallback(connected, branch)
+    d.addBoth(cleanup)
+
+    reactor.run()
+
+
+
+
+
+class BuildbotPingGit(config):
+    """
+    Ping another buildbot. Heavily based on git_buildbot.py used in post-receive hooks
+    """
+    description = "Ping Buildbot Master as if it's HEAD repository was received"
+    user_options = [
+    ]
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        master_config = self.distribution.buildbot_meta_master
+        if master_config.has_key('branch'):
+            branch = master_config['branch']
+        else:
+            branch = "master"
+
+        buildbot_ping_git(master_config['host'], master_config['port'], branch)
+
