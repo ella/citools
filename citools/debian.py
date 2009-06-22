@@ -305,7 +305,6 @@ class UpdateDebianVersion(Command):
         pass
 
     def run(self):
-        print 'yo'
         """ Compute current version and update debian version accordingly """
         try:
             update_debianization(self.distribution.get_version())
