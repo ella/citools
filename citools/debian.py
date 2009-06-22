@@ -1,7 +1,7 @@
 import os
 import re
 from shutil import rmtree
-from subprocess import check_call, PIPE
+from subprocess import check_call
 
 from distutils.command.config import config
 
