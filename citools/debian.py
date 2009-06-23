@@ -349,7 +349,8 @@ class CreateDebianMetaPackage(Command):
         pass
 
     def run(self):
-        pass
+        for cmd_name in self.get_sub_commands():
+            self.run_command(cmd_name)
 
     sub_commands = [
         ("update_debian_version", None),
