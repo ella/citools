@@ -70,6 +70,12 @@ class GitSetVersion(CriticalShellCommand):
     descriptionDone = ["version set"]
     command = ["python", "setup.py", "compute_version_git"]
 
+class GitSetMetaVersion(CriticalShellCommand):
+    name = "update version"
+    description = ["setting version"]
+    descriptionDone = ["version set"]
+    command = ["python", "setup.py", "compute_version_meta_git"]
+
 class BuildDebianPackage(CriticalShellCommand):
     name = "build debian package"
     description = ["building debian package"]
