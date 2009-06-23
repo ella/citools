@@ -354,5 +354,6 @@ class CreateDebianMetaPackage(Command):
     sub_commands = [
         ("update_debian_version", None),
         ("update_dependency_versions", None),
+        ("copy_dependency_images", None),
         ("bdist_deb", None),
     ]
