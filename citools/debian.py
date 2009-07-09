@@ -330,6 +330,7 @@ class CreateDebianPackage(Command):
             self.run_command(cmd_name)
 
     sub_commands = [
+        ("update_version_git", None),
         ("update_debian_version", None),
         ("bdist_deb", None),
     ]
@@ -353,6 +354,7 @@ class CreateDebianMetaPackage(Command):
             self.run_command(cmd_name)
 
     sub_commands = [
+        ("update_version_git", None),
         ("update_debian_version", None),
         ("update_dependency_versions", None),
         ("copy_dependency_images", None),
