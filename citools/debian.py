@@ -91,6 +91,16 @@ class Package(object):
         self.name = name
         self.version = version
 
+    def get_full_name(self):
+        if self.version:
+            return "%s-%s" % (self.name, self.version)
+        else:
+            return self.name
+
+    def __str__(self):
+        return self.full_name
+
+    full_name = property(fget=get_full_name)
 
 class ControlParser(object):
     """
@@ -232,7 +242,7 @@ def get_new_dependencies(dir):
     packages = parser.get_packages()
 
     version = ".".join(map(str, compute_version(get_git_describe(repository_directory=dir, fix_environment=True))))
-    deps = [Dependency(package, version) for package in packages]
+    deps = [Dependency(str(package), version) for package in packages]
 
     return deps
 
