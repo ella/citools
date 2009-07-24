@@ -238,3 +238,5 @@ class TestVersionNumberManipulations(TestCase):
 
     def test_sum_bad_number_in_first_version(self):
         self.assertRaises(ValueError, sum_versions, (-1, 2, 3), (0, 128, 0))
+
+
