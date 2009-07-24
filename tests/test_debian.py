@@ -103,6 +103,16 @@ class TestControlParsing(DependencyTestCase):
             ControlParser(self.test_control).parse_dependency_line("Depends: centrum-python-package1-aaa, centrum-python-package2-aaa (= 0.2.0)"),
         )
 
+    def test_versioned_package_name_recognized(self):
+        assert_equals("package2-with-static-files",
+            ControlParser(self.test_control).parse_package_line("Package: package2-with-static-files-0.3.25")[0].name
+        )
+
+    def test_versioned_package_name_version_recognized(self):
+        assert_equals("0.3.25",
+            ControlParser(self.test_control).parse_package_line("Package: package-with-static-files-0.3.25")[0].version
+        )
+
     def test_depencies_replaced(self):
         self.expected_replaced = master_control_content_pattern % {
             'package1_name': 'package1',
@@ -135,7 +145,7 @@ class TestControlParsing(DependencyTestCase):
         parser = ControlParser(self.test_control)
         packages = [u'centrum-python-metapackage-aaa', u'centrum-python-metapackage-bbb']
 
-        assert_equals(packages, parser.get_packages())
+        assert_equals(packages, [p.name for p in parser.get_packages()])
 
     def test_upgrade_to_multicipher_version_passes_downgrade_check(self):
         parser = ControlParser(self.test_control)
@@ -388,8 +398,6 @@ class TestVersionedStatic(object):
         '''
         list resulting directory and compare with expected result
         '''
-
-        # TODO: call functionality :))
 
         actual_structure = sorted(self.store_directory_structure('.'))
         expected_structure = sorted((

@@ -84,6 +84,14 @@ class Dependency(object):
             'version' : self.version or '<unspecified>',
         }
 
+class Package(object):
+    def __init__(self, name, version=None):
+        super(Package, self).__init__()
+
+        self.name = name
+        self.version = version
+
+
 class ControlParser(object):
     """
     Parser for debian/control files
@@ -95,7 +103,8 @@ class ControlParser(object):
 
     def parse_dependency_line(self, line):
         """ Return dependency from Depends: line """
-        #TODO: Better parsing, especially when we will need image-<version> package
+        #TODO: Better parsing, especially when we will need image-<version> package.
+        # update: image-<version> is in Package: line
         line = line[len("Depends:"):]
         dependencies = []
         dependency_candidates = line.split(",")
@@ -107,6 +116,23 @@ class ControlParser(object):
                     new_dep.extract_version_from_debversion(dep[1])
                 dependencies.append(new_dep)
         return dependencies
+
+    def parse_package_line(self, line):
+        line = line[len('Package:'):].split(',')
+        packages = []
+        for candidate in line:
+            # this code can be shortened to oneliner, if one could do negative
+            # lookahead assertion for character included in current pattern match
+            # not supported, however, so groups are not containing exactly what they should
+            #TODO: rewrite using tokenization/pyparsing
+            package = re.match("\ ?(?P<name>[a-z0-9\-]+)(?!\.)(\-)?((?<=-)(?P<version>[0-9\-\.]+))?", candidate)
+            if package:
+                name = package.groupdict()['name']
+                version = package.groupdict()['version']
+                if name.endswith("-"):
+                    name = name[:-1]
+                packages.append(Package(name=name, version=version))
+        return packages
 
     def get_dependencies(self):
         """ Return list of dependencies from control file """
@@ -121,7 +147,7 @@ class ControlParser(object):
         packages = []
         for line in self.control_file.splitlines():
             if line.startswith('Package:'):
-                packages.extend([i.strip() for i in line[len('Package:'):].split(',')])
+                packages.extend(self.parse_package_line(line))
         return packages
 
     def check_downgrade(self, current_version, new_version):
