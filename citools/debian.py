@@ -7,6 +7,7 @@ from subprocess import check_call
 from distutils.core import Command
 from citools.version import get_git_describe, compute_version, compute_meta_version, get_git_head_hash
 
+from os import walk
 from citools.git import fetch_repository
 
 
@@ -56,6 +57,9 @@ class Dependency(object):
         if not self.sign and version:
             self.sign = u'='
 
+    def is_versioned(self):
+        return False
+
     def get_dependency_string(self):
         if self.version:
             return u"%(name)s (%(sign)s %(version)s)" % {
@@ -102,6 +106,9 @@ class VersionedDependency(Dependency):
             'name' : self.name,
             'version' : self.version,
         }
+
+    def is_versioned(self):
+        return True
 
     def extract_version_from_debversion(self, debversion):
         version = re.match("(?P<version>[0-9\-\.]+)", debversion)
@@ -183,6 +190,10 @@ class ControlParser(object):
             if line.startswith('Depends:'):
                 dependencies.extend(self.parse_dependency_line(line))
         return dependencies
+
+    def get_versioned_dependencies(self):
+        deps = self.get_dependencies()
+        return [dep for dep in deps if dep.is_versioned()]
 
     def get_packages(self):
         """ Return list of packages present in file """
@@ -330,7 +341,20 @@ def replace_versioned_packages(control_path, version, workdir=None):
     f.close
 
 
-
+def replace_versioned_debian_files(debian_path, original_version, new_version):
+    f = open(os.path.join(debian_path, 'control'))
+    parser = ControlParser(f.read())
+    f.close()
+    versioned_deps = parser.get_versioned_dependencies()
+    for path, dirs, files in walk(debian_path):
+        for file in files:
+            for dep in versioned_deps:
+                s = "%s-%s" % (dep.name, dep.version)
+                if file.startswith(s):
+                    old_name = file
+                    new_name = "%s-%s%s" % (dep.name, new_version, old_name[len(s):])
+                    print new_name
+                    os.rename(os.path.join(path, old_name), os.path.join(new_name))
 
 def update_dependency_versions(repositories, control_path, workdir=None):
     """

@@ -6,7 +6,11 @@ from tempfile import mkdtemp
 
 from nose.tools import assert_equals, assert_raises, assert_true
 
-from citools.debian import ControlParser, update_dependency_versions, Dependency, VersionedDependency, replace_versioned_packages
+from citools.debian import (
+    ControlParser, update_dependency_versions, Dependency,
+    VersionedDependency, replace_versioned_packages,
+    replace_versioned_debian_files,
+)
 
 
 master_control_content_pattern = u"""\
@@ -429,20 +433,31 @@ Description: package with static files with versioned path
         '''
         list resulting directory and compare with expected result
         '''
+        version = '1.2.3'
+        original_version = '0.0.0.0'
 
-        replace_versioned_packages(control_path=join(self.directory, 'debian', 'control'), version='1.2.3')
+        control_path = join(self.directory, 'debian', 'control')
+        replace_versioned_debian_files(debian_path=join(self.directory, 'debian'), original_version=original_version, new_version=version)
+        replace_versioned_packages(control_path=control_path, version=version)
 
 
         actual_structure = sorted(self.store_directory_structure('.'))
+        for i in actual_structure:
+            print i
         expected_structure = sorted((
             (join('.'), None),
             (join('.', 'debian'), None),
-            (join('.', 'debian', 'control'), self.debian_control % {'version': '1.2.3',}),
+            (join('.', 'debian', 'control'), self.debian_control % {'version': version,}),
             (join('.', 'debian', 'package-with-static-files.dirs'), self.debian_package_dirs),
             (join('.', 'debian', 'package-with-static-files.install'), self.debian_package_install),
-            (join('.', 'debian', 'package-with-static-files-1.2.3.dirs'), self.debian_package_version_dirs % {'version': '1.2.3',}),
-            (join('.', 'debian', 'package-with-static-files-1.2.3.install'), self.debian_package_version_install % {'version': '1.2.3',}),
+            (join('.', 'debian', 'package-with-static-files-1.2.3.dirs'), self.debian_package_version_dirs % {'version': version,}),
+            (join('.', 'debian', 'package-with-static-files-1.2.3.install'), self.debian_package_version_install % {'version': version,}),
         ))
+
+        #guard assertion
+        assert_equals(len(expected_structure), len(actual_structure))
+
+        assert_equals(actual_structure, expected_structure)
 
         for actual, expected in zip(actual_structure, expected_structure):
             assert_equals(expected, actual)
