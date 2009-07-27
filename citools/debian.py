@@ -351,10 +351,18 @@ def replace_versioned_debian_files(debian_path, original_version, new_version):
             for dep in versioned_deps:
                 s = "%s-%s" % (dep.name, dep.version)
                 if file.startswith(s):
-                    old_name = file
-                    new_name = "%s-%s%s" % (dep.name, new_version, old_name[len(s):])
-                    print new_name
-                    os.rename(os.path.join(path, old_name), os.path.join(new_name))
+                    f = open(os.path.join(path, file))
+                    content = f.read()
+                    f.close()
+                    new_name = "%s-%s%s" % (dep.name, new_version, file[len(s):])
+
+                    new_content = re.sub(original_version, new_version, content)
+
+                    f = open(os.path.join(path, new_name), 'w')
+                    f.write(new_content)
+                    f.close()
+
+                    os.remove(os.path.join(path, file))
 
 def update_dependency_versions(repositories, control_path, workdir=None):
     """

@@ -442,8 +442,7 @@ Description: package with static files with versioned path
 
 
         actual_structure = sorted(self.store_directory_structure('.'))
-        for i in actual_structure:
-            print i
+
         expected_structure = sorted((
             (join('.'), None),
             (join('.', 'debian'), None),
@@ -456,8 +455,6 @@ Description: package with static files with versioned path
 
         #guard assertion
         assert_equals(len(expected_structure), len(actual_structure))
-
-        assert_equals(actual_structure, expected_structure)
 
         for actual, expected in zip(actual_structure, expected_structure):
             assert_equals(expected, actual)
