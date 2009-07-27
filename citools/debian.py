@@ -1,4 +1,5 @@
 import os
+from os.path import join
 from popen2 import Popen3
 import re
 from shutil import rmtree
@@ -369,6 +370,8 @@ def update_dependency_versions(repositories, control_path, workdir=None):
     Update control_path (presumably debian/control) with package version collected
     by parsing debian/controls in dependencies.
     Also updates with change of my path.
+
+    If any versioned dependencies are present, replace them too, as well as debian files
     """
     workdir = workdir or os.curdir
     f = open(control_path)
@@ -376,6 +379,14 @@ def update_dependency_versions(repositories, control_path, workdir=None):
     f.close()
 
     deps_from_repositories = []
+
+    current_meta_version = None
+    for package in meta_parser.get_versioned_dependencies():
+        if package.version:
+            if not current_meta_version:
+                current_meta_version = package.version
+            else:
+                assert current_meta_version == package.version, "Versioned packages with different versions, aborting"
 
     for repository in repositories:
         deps = fetch_new_dependencies(repository)
@@ -400,6 +411,12 @@ def update_dependency_versions(repositories, control_path, workdir=None):
     f = open(control_path, 'w')
     f.write(meta_parser.control_file)
     f.close()
+
+    # if versioned packages present, replace'em
+    if current_meta_version:
+        replace_versioned_debian_files(debian_path=join(control_path, os.pardir), original_version=current_meta_version, new_version=meta_version)
+        replace_versioned_packages(control_path=control_path, version=meta_version)
+
 
 class UpdateDependencyVersions(Command):
 
