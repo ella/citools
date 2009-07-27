@@ -1,15 +1,12 @@
 import os
 from os.path import join
 from shutil import rmtree
-from tempfile import mkdtemp
-
-from shutil import rmtree
 from subprocess import check_call, PIPE
 from tempfile import mkdtemp
 
 from nose.tools import assert_equals, assert_raises, assert_true
 
-from citools.debian import ControlParser, update_dependency_versions, Dependency
+from citools.debian import ControlParser, update_dependency_versions, Dependency, VersionedDependency, replace_versioned_packages
 
 
 master_control_content_pattern = u"""\
@@ -29,6 +26,10 @@ Package: centrum-python-metapackage-bbb
 Architecture: all
 Depends: centrum-python-%(package1_name)s-bbb (= %(package1_version)s), centrum-python-%(package2_name)s-bbb (= %(package2_version)s), centrum-python-metapackage-aaa (= %(metapackage_version)s)
 Description: metapackage bbb
+
+Package: centrum-python-metapackage-aaa-static-files-0.0.0
+Architecture: all
+Description: static files for metapackage
 """
 
 slave_control_content_pattern = u"""\
@@ -103,6 +104,11 @@ class TestControlParsing(DependencyTestCase):
             ControlParser(self.test_control).parse_dependency_line("Depends: centrum-python-package1-aaa, centrum-python-package2-aaa (= 0.2.0)"),
         )
 
+    def test_dependency_list_retrieved_for_versioned_package(self):
+        self.assert_dependencies_equals([VersionedDependency(name="package-static", version="0.5.5"), Dependency(name="package-static")],
+            ControlParser(self.test_control).parse_dependency_line("Depends: package-static, package-static-0.5.5"),
+        )
+
     def test_versioned_package_name_recognized(self):
         assert_equals("package2-with-static-files",
             ControlParser(self.test_control).parse_package_line("Package: package2-with-static-files-0.3.25")[0].name
@@ -112,6 +118,14 @@ class TestControlParsing(DependencyTestCase):
         assert_equals("0.3.25",
             ControlParser(self.test_control).parse_package_line("Package: package-with-static-files-0.3.25")[0].version
         )
+
+    def test_versioned_package_name_replaced(self):
+        parser = ControlParser("Package: package-with-static-files-0.5.0")
+        parser.replace_versioned_packages(version="1.5.78")
+
+        assert_equals("Package: package-with-static-files-1.5.78", parser.control_file.strip())
+
+        
 
     def test_depencies_replaced(self):
         self.expected_replaced = master_control_content_pattern % {
@@ -143,7 +157,7 @@ class TestControlParsing(DependencyTestCase):
 
     def test_packages_retrieved(self):
         parser = ControlParser(self.test_control)
-        packages = [u'centrum-python-metapackage-aaa', u'centrum-python-metapackage-bbb']
+        packages = [u'centrum-python-metapackage-aaa', u'centrum-python-metapackage-bbb', 'centrum-python-metapackage-aaa-static-files']
 
         assert_equals(packages, [p.name for p in parser.get_packages()])
 
@@ -219,6 +233,23 @@ class TestDependency(DependencyTestCase):
             current_dependencies = [Dependency(name="mypage", version="0.5.0")],
             new_dependencies = [Dependency(name="mypage", version="0.4.9.9"), Dependency(name="mypage", version="0.5.0")],
         )
+
+    def test_dependency_merge_versioned_and_nonversioned_allowed(self):
+        expected_dependencies = [
+            Dependency(name="static", version="1.0.0"),
+            VersionedDependency(name="static"),
+        ]
+        current_dependencies = [
+            Dependency(name="static", version="0.5.0"),
+            VersionedDependency(name="static"),
+        ]
+        new_dependencies = [
+            VersionedDependency(name="static", version="1.0.0"),
+        ]
+        self.assert_dependencies_equals(expected_dependencies, ControlParser(u"").get_dependency_merge(
+            current_dependencies = current_dependencies,
+            new_dependencies = new_dependencies,
+        ))
 
 class TestUpdateDependencyVersions(object):
     def setUp(self):
@@ -323,23 +354,23 @@ class TestUpdateDependencyVersions(object):
 
 class TestVersionedStatic(object):
     debian_control = '''\
-    Source: package-with-static-files
-    Section: python
-    Priority: optional
-    Maintainer: John Doe <john@doe.com>
-    Build-Depends: cdbs (>= 0.4.41), debhelper (>= 5.0.37.2), python-dev, python-support (>= 0.3), python-setuptools
-    Standards-Version: 3.7.2
+Source: package-with-static-files
+Section: python
+Priority: optional
+Maintainer: John Doe <john@doe.com>
+Build-Depends: cdbs (>= 0.4.41), debhelper (>= 5.0.37.2), python-dev, python-support (>= 0.3), python-setuptools
+Standards-Version: 3.7.2
 
-    Package: package-with-static-files
-    Architecture: all
-    Depends: package-with-static-files-%(version)s
-    Description: package with static files without version in path
+Package: package-with-static-files
+Architecture: all
+Depends: package-with-static-files-%(version)s
+Description: package with static files without version in path
 
-    Package: package-with-static-files-%(version)s
-    Architecture: all
-    Depends:
-    Description: package with static files with versioned path
-    '''
+Package: package-with-static-files-%(version)s
+Architecture: all
+Depends:
+Description: package with static files with versioned path
+'''
 
     debian_package_dirs = 'var/www/package'
     debian_package_install = 'data/* var/www/package'
@@ -349,11 +380,11 @@ class TestVersionedStatic(object):
     TEST_DIR_STRUCTURE = (
         (join('.'), None),
         (join('.', 'debian'), None),
-        (join('.', 'debian', 'control'), debian_control % {'version': 'VERSION',}),
+        (join('.', 'debian', 'control'), debian_control % {'version': '0.0.0.0',}),
         (join('.', 'debian', 'package-with-static-files.dirs'), debian_package_dirs),
         (join('.', 'debian', 'package-with-static-files.install'), debian_package_install),
-        (join('.', 'debian', 'package-with-static-files-VERSION.dirs'), debian_package_version_dirs % {'version': 'VERSION',}),
-        (join('.', 'debian', 'package-with-static-files-VERSION.install'), debian_package_version_install % {'version': 'VERSION',}),
+        (join('.', 'debian', 'package-with-static-files-0.0.0.0.dirs'), debian_package_version_dirs % {'version': '0.0.0.0',}),
+        (join('.', 'debian', 'package-with-static-files-0.0.0.0.install'), debian_package_version_install % {'version': '0.0.0.0',}),
     )
 
 
@@ -399,6 +430,9 @@ class TestVersionedStatic(object):
         list resulting directory and compare with expected result
         '''
 
+        replace_versioned_packages(control_path=join(self.directory, 'debian', 'control'), version='1.2.3')
+
+
         actual_structure = sorted(self.store_directory_structure('.'))
         expected_structure = sorted((
             (join('.'), None),
@@ -411,7 +445,7 @@ class TestVersionedStatic(object):
         ))
 
         for actual, expected in zip(actual_structure, expected_structure):
-            assert_equals(actual, expected)
+            assert_equals(expected, actual)
 
     def tearDown(self):
         os.chdir(self.oldcwd)
