@@ -43,6 +43,9 @@ class Dependency(object):
     """
     Dependency in the debian package
     """
+
+    LINE_PATTERN = "(?P<name>[a-z0-9\-]+)(?P<version>\ \([\=\>\<]+\ [0-9\-\.]+\))?"
+
     def __init__(self, name, version=None, sign=None):
         super(Dependency, self).__init__()
         
@@ -84,6 +87,30 @@ class Dependency(object):
             'version' : self.version or '<unspecified>',
         }
 
+class VersionedDependency(Dependency):
+    """
+    Versioned dependency. Unlike Dependency, it includes version into package name,
+    not in parenthesis.
+
+    This is hack around Debian absence of slots.
+    """
+
+    LINE_PATTERN = "(?P<name>[a-z0-9\-]+)\-(?P<version>[0-9\-\.]+)"
+
+    def get_dependency_string(self):
+        return u"%(name)s-%(version)s" % {
+            'name' : self.name,
+            'version' : self.version,
+        }
+
+    def extract_version_from_debversion(self, debversion):
+        version = re.match("(?P<version>[0-9\-\.]+)", debversion)
+        if version and version.groupdict().has_key('version'):
+            self.version = version.groupdict()['version']
+
+    def update_version(self, version_candidate):
+        self.version = version_candidate
+
 class Package(object):
     def __init__(self, name, version=None):
         super(Package, self).__init__()
@@ -100,6 +127,9 @@ class Package(object):
     def __str__(self):
         return self.full_name
 
+    def get_package_string(self):
+        return self.get_full_name()
+
     full_name = property(fget=get_full_name)
 
 class ControlParser(object):
@@ -113,18 +143,20 @@ class ControlParser(object):
 
     def parse_dependency_line(self, line):
         """ Return dependency from Depends: line """
-        #TODO: Better parsing, especially when we will need image-<version> package.
-        # update: image-<version> is in Package: line
+        AVAILABLE_DEPS = [VersionedDependency, Dependency]
         line = line[len("Depends:"):]
         dependencies = []
         dependency_candidates = line.split(",")
         for candidate in dependency_candidates:
-            deps = re.findall("(?P<name>[a-z0-9\-]+)(?P<version>\ \([\=\>\<]+\ [0-9\-\.]+\))?", candidate)
-            for dep in deps:
-                new_dep = Dependency(dep[0])
-                if dep[1]:
-                    new_dep.extract_version_from_debversion(dep[1])
-                dependencies.append(new_dep)
+            for obj in AVAILABLE_DEPS:
+                deps = re.findall(obj.LINE_PATTERN, candidate)
+                for dep in deps:
+                    new_dep = obj(dep[0])
+                    if dep[1]:
+                        new_dep.extract_version_from_debversion(dep[1])
+                    dependencies.append(new_dep)
+                if deps:
+                    break
         return dependencies
 
     def parse_package_line(self, line):
@@ -187,12 +219,15 @@ class ControlParser(object):
         """
         Merge old dependencies with new one. If current dependency has version specified
         and it's in new_dependencies as well, replace it with it's version.
+
+        Dependency and VersionedDependency with same name is not considered as a conflict
+
         Otherwise, leave it untouched.
         """
         deps = []
         for current_dep in current_dependencies:
             if current_dep.version:
-                candidates = [i for i in new_dependencies if i.name == current_dep.name]
+                candidates = [i for i in new_dependencies if i.name == current_dep.name and i.version]
                 if len(candidates) > 1:
                     raise ValueError(u"More then one dependency with same name")
                 if len(candidates) == 1 and candidates[0].version:
@@ -209,7 +244,6 @@ class ControlParser(object):
         In my control file, replace version of dependencies with exact version
         """
         new_control_file = []
-        
         for line in self.control_file.splitlines():
             if line.startswith('Depends:'):
                 new_deps = self.get_dependency_merge(current_dependencies=self.parse_dependency_line(line),
@@ -226,6 +260,42 @@ class ControlParser(object):
         self.control_file = u'\n'.join(new_control_file)
         # newline at the and of the file is good manner
         self.control_file += u'\n'
+
+    def replace_versioned_packages(self, version):
+        """
+        In my control file, replace versioned packages with updated version (preferably mine)
+        """
+        new_control_file = []
+        dependencies = self.get_dependencies()
+        new_deps = []
+        
+        for line in self.control_file.splitlines():
+            if line.startswith('Package:'):
+                packages = self.parse_package_line(line)
+                for package in packages:
+                    if package.version:
+                        package.version = version
+                string = u", ".join(
+                    [i.get_package_string() for i in packages]
+                )
+                if string:
+                    line = u"Package: %s" % string
+
+                # and every versioned package is also becoming new dependency that must be updated
+                # it makes on sense to include non-versioned ones for replacement (as they'll be merged from original)
+                for package in packages:
+                    if package.version:
+                        new_deps.append(Dependency(name=package.name, version=package.version, sign='='))
+
+            new_control_file.append(line)
+
+
+        self.control_file = u'\n'.join(new_control_file)
+        # newline at the and of the file is good manner
+        self.control_file += u'\n'
+
+        # and now, replace the dependencies
+        self.replace_dependencies(new_deps)
 
 
 def fetch_new_dependencies(repository):
@@ -245,6 +315,21 @@ def get_new_dependencies(dir):
     deps = [Dependency(str(package), version) for package in packages]
 
     return deps
+
+
+def replace_versioned_packages(control_path, version, workdir=None):
+    workdir = workdir or os.curdir
+    f = open(control_path)
+    parser = ControlParser(f.read())
+    f.close()
+
+    parser.replace_versioned_packages(version)
+
+    f = open(control_path, 'w')
+    f.write(parser.control_file)
+    f.close
+
+
 
 
 def update_dependency_versions(repositories, control_path, workdir=None):
