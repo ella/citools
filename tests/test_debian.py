@@ -442,7 +442,6 @@ Description: package with static files with versioned path
 
 
         actual_structure = sorted(self.store_directory_structure('.'))
-
         expected_structure = sorted((
             (join('.'), None),
             (join('.', 'debian'), None),
@@ -453,11 +452,18 @@ Description: package with static files with versioned path
             (join('.', 'debian', 'package-with-static-files-1.2.3.install'), self.debian_package_version_install % {'version': version,}),
         ))
 
-        #guard assertion
-        assert_equals(len(expected_structure), len(actual_structure))
+        actual_structure_filenames = [ f for f, c in actual_structure ]
+        actual_structure_contents  = [ c for f, c in actual_structure ]
+        expected_structure_filenames = [ f for f, c in expected_structure ]
+        expected_structure_contents  = [ c for f, c in expected_structure ]
 
-        for actual, expected in zip(actual_structure, expected_structure):
-            assert_equals(expected, actual)
+        # guard assertion
+        assert_equals(expected_structure_filenames, actual_structure_filenames)
+        assert_equals(expected_structure_contents, actual_structure_contents)
+
+        for (exp_fname, exp_content), (act_fname, act_content) in zip(expected_structure, actual_structure):
+            assert_equals(exp_fname, act_fname) # test file name
+            assert_equals(exp_content, act_content) # test file content
 
     def tearDown(self):
         os.chdir(self.oldcwd)
