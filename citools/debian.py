@@ -156,10 +156,10 @@ class ControlParser(object):
         dependencies = []
         dependency_candidates = line.split(",")
         for candidate in dependency_candidates:
-            for obj in AVAILABLE_DEPS:
-                deps = re.findall(obj.LINE_PATTERN, candidate)
+            for klass in AVAILABLE_DEPS:
+                deps = re.findall(klass.LINE_PATTERN, candidate)
                 for dep in deps:
-                    new_dep = obj(dep[0])
+                    new_dep = klass(dep[0])
                     if dep[1]:
                         new_dep.extract_version_from_debversion(dep[1])
                     dependencies.append(new_dep)
