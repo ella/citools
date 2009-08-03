@@ -1,5 +1,5 @@
 import os
-from os.path import join, dirname
+from os.path import dirname
 from popen2 import Popen3
 import re
 from shutil import rmtree
