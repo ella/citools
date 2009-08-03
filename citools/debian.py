@@ -1,5 +1,5 @@
 import os
-from os.path import join
+from os.path import join, dirname
 from popen2 import Popen3
 import re
 from shutil import rmtree
@@ -350,7 +350,7 @@ def replace_versioned_debian_files(debian_path, original_version, new_version):
     for path, dirs, files in walk(debian_path):
         for file in files:
             for dep in versioned_deps:
-                s = "%s-%s" % (dep.name, dep.version)
+                s = "%s-%s" % (dep.name, original_version)
                 if file.startswith(s):
                     f = open(os.path.join(path, file))
                     content = f.read()
@@ -414,8 +414,8 @@ def update_dependency_versions(repositories, control_path, workdir=None):
 
     # if versioned packages present, replace'em
     if current_meta_version:
-        replace_versioned_debian_files(debian_path=join(control_path, os.pardir), original_version=current_meta_version, new_version=meta_version)
-        replace_versioned_packages(control_path=control_path, version=meta_version)
+        replace_versioned_debian_files(debian_path=dirname(control_path), original_version=current_meta_version, new_version=meta_version_string)
+        replace_versioned_packages(control_path=control_path, version=meta_version_string)
 
 
 class UpdateDependencyVersions(Command):
@@ -432,7 +432,12 @@ class UpdateDependencyVersions(Command):
         pass
 
     def run(self):
-        update_dependency_versions(self.distribution.dependencies_git_repositories, os.path.join('debian', 'control'))
+        try:
+            update_dependency_versions(self.distribution.dependencies_git_repositories, os.path.join('debian', 'control'))
+        except:
+            import traceback
+            traceback.print_exc()
+            raise
 
 def update_debianization(version):
     """
