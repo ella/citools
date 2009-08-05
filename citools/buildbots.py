@@ -162,11 +162,14 @@ class BuildbotPingGit(config):
         pass
 
     def run(self):
-        master_config = self.distribution.buildbot_meta_master
-        if master_config.has_key('branch'):
-            branch = master_config['branch']
-        else:
-            branch = "master"
+        masters_config = self.distribution.buildbot_meta_master
+        if isinstance(masters_config, dict):
+            masters_config = [masters_config]
+        for master_config in masters_config:
+            if master_config.has_key('branch'):
+                branch = master_config['branch']
+            else:
+                branch = "master"
 
-        buildbot_ping_git(master_config['host'], master_config['port'], branch)
+            buildbot_ping_git(master_config['host'], master_config['port'], branch)
 
