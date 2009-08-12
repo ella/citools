@@ -2,9 +2,8 @@ from ConfigParser import SafeConfigParser
 from unittest import TestCase
 
 import os
-from subprocess import Popen, PIPE, check_call
+from subprocess import Popen, PIPE
 from shutil import rmtree
-from StringIO import StringIO
 from tempfile import mkdtemp, mkstemp
 
 from citools.version import fetch_repository
