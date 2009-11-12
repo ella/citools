@@ -2,6 +2,7 @@ import os
 from os.path import dirname
 from popen2 import Popen3
 import re
+from subprocess import check_call
 
 from distutils.core import Command
 from citools.version import get_git_describe, compute_version, compute_meta_version, get_git_head_hash
