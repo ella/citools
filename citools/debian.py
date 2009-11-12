@@ -315,7 +315,7 @@ def fetch_new_dependencies(repository):
         repository=repository['url'], branch=repository['branch']
     )
     deps = get_new_dependencies(repo)
-    rmtree(repo)
+    #rmtree(repo)
 
     return deps
 

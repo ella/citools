@@ -14,7 +14,7 @@ def copy_images(repositories, static_dir):
         package_static_dir = os.path.join(dir, repository['package_name'], 'static')
         if os.path.exists(package_static_dir):
             copytree(package_static_dir, os.path.join(static_dir, repository['package_name']))
-        rmtree(dir)
+        #rmtree(dir)
     
 class CopyDependencyImages(config):
 

@@ -170,7 +170,7 @@ def compute_meta_version(dependency_repositories, workdir=None):
         workdir = fetch_repository(repository_dict['url'], branch=branch, workdir=repositories_dir)
         new_version = compute_version(get_git_describe(repository_directory=workdir, fix_environment=True))
         version = sum_versions(version, new_version)
-    rmtree(repositories_dir)
+    #rmtree(repositories_dir)
     return version
 
 class GitSetMetaVersion(config):
