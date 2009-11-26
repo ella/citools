@@ -6,17 +6,9 @@ from subprocess import Popen, PIPE
 from shutil import rmtree
 from tempfile import mkdtemp, mkstemp
 
-from citools.version import fetch_repository
+from citools.git import retrieve_repository_metadata, fetch_repository
 
-class TestRepositoryFetching(TestCase):
-
-    def setUp(self):
-        TestCase.setUp(self)
-
-        self._create_git_repository()
-        self._prepare_tagged_repo_with_file(tag="0.1")
-
-
+class GitTestCase(TestCase):
     def _create_git_repository(self):
         # create temporary directory and initialize git repository there
         self.repo = mkdtemp(prefix='test_git_')
@@ -33,6 +25,35 @@ class TestRepositoryFetching(TestCase):
         proc = Popen(['git', 'config', 'user.email', 'dummy-tester@example.com'])
         proc.wait()
         self.assertEquals(0, proc.returncode)
+
+    def do_piped_command_for_success(self, command):
+        proc = Popen(command, stdout=PIPE, stdin=PIPE, stderr=PIPE)
+        stdout, stderr = proc.communicate()
+        self.assertEquals(0, proc.returncode)
+
+        return (stdout, stderr)
+
+    def commit(self, message='dummy'):
+        """ Commmit into repository and return commited revision """
+        self.do_piped_command_for_success(['git', 'commit', '-a', '-m', '"%s"' % message])
+        stdout = self.do_piped_command_for_success(['git', 'rev-parse', 'HEAD'])[0]
+        return stdout.strip()
+
+    def tearDown(self):
+        TestCase.tearDown(self)
+        # delete temporary repository and restore ENV vars after update
+        rmtree(self.repo)
+        os.chdir(self.oldcwd)
+
+
+class TestRepositoryFetching(GitTestCase):
+
+    def setUp(self):
+        TestCase.setUp(self)
+
+        self._create_git_repository()
+        self._prepare_tagged_repo_with_file(tag="0.1")
+
 
     def _prepare_tagged_repo_with_file(self, tag):
         f = open(os.path.join(self.repo, 'test.txt'), 'wb')
@@ -90,3 +111,118 @@ cache_dir = %s
         # delete temporary repository and restore ENV vars after update
         rmtree(self.repo)
         os.chdir(self.oldcwd)
+
+
+class TestHistoryMetadataRetrieval(GitTestCase):
+    def setUp(self):
+        TestCase.setUp(self)
+
+        self._create_git_repository()
+        self.revisions = self._prepare_branched_repository()
+
+    def _prepare_branched_repository(self):
+        """
+        Create git repository, created in order:
+     
+     6
+    |  \
+    5   3
+    |   |
+    4   2
+     | /
+     1
+        """
+        revisions = []
+        # 1
+        f = open(os.path.join(self.repo, 'test.txt'), 'wb')
+        f.write("test")
+        f.close()
+
+        self.do_piped_command_for_success(["git", "add", "*"])
+        revisions.append(self.commit(message="1"))
+
+        # 2
+
+        self.do_piped_command_for_success(["git", "checkout", "-b", "new_branch"])
+
+        f = open(os.path.join(self.repo, 'test.txt'), 'wb')
+        f.write("changed")
+        f.close()
+
+        revisions.append(self.commit(message="2"))
+
+        # 3
+        f = open(os.path.join(self.repo, 'test.txt'), 'wb')
+        f.write("changed in new_branch again")
+        f.close()
+
+        revisions.append(self.commit(message="3"))
+
+        # 4
+        self.do_piped_command_for_success(["git", "checkout", "master"])
+
+        f = open(os.path.join(self.repo, 'test2.txt'), 'wb')
+        f.write("new")
+        f.close()
+
+        self.do_piped_command_for_success(["git", "add", "*"])
+
+        revisions.append(self.commit(message="4"))
+
+        # 5
+        self.do_piped_command_for_success(["git", "checkout", "master"])
+
+        f = open(os.path.join(self.repo, 'test2.txt'), 'wb')
+        f.write("changed in master")
+        f.close()
+
+        revisions.append(self.commit(message="5"))
+
+        #6
+        self.do_piped_command_for_success(["git", "merge", "new_branch"])
+
+        return revisions
+
+    def _prepare_shorter_tree(self, revision):
+        self.do_piped_command_for_success(["git", "checkout", str(revision)])
+        self.do_piped_command_for_success(["git", "reset", "--hard"])
+
+    def _get_metadata_for_revision_4(self):
+        self._prepare_shorter_tree(revision=self.revisions[3])
+        return retrieve_repository_metadata(str(self.revisions[0]))[0]
+
+    def test_repository_prepared_successfully(self):
+        f = open(os.path.join(self.repo, 'test.txt'))
+        f1 = f.read()
+        f.close()
+
+        f = open(os.path.join(self.repo, 'test2.txt'))
+        f2 = f.read()
+        f.close()
+
+        self.assertEquals("changed in new_branch again", f1)
+        self.assertEquals("changed in master", f2)
+
+    def test_simple_diff_retrieved_both_items(self):
+        self._prepare_shorter_tree(self.revisions[4])
+        self.assertEquals(2, len(retrieve_repository_metadata(str(self.revisions[0]))))
+
+    def test_simple_diff_retrieved_proper_hashes(self):
+        self._prepare_shorter_tree(self.revisions[4])
+        
+        metadata = retrieve_repository_metadata(str(self.revisions[0]))
+        self.assertEquals(self.revisions[3], metadata[0]['hash'])
+        self.assertEquals(self.revisions[4], metadata[1]['hash'])
+
+    def test_simple_diff_contains_author_name(self):
+        self.assertEquals('dummy-tester', self._get_metadata_for_revision_4()['author_name'])
+
+    def test_simple_diff_contains_author_email(self):
+        self.assertEquals('dummy-tester@example.com', self._get_metadata_for_revision_4()['author_email'])
+
+    def test_simple_diff_contains_commiter_name(self):
+        self.assertEquals('dummy-tester', self._get_metadata_for_revision_4()['commiter_name'])
+
+    def test_simple_diff_contains_commiter_email(self):
+        self.assertEquals('dummy-tester@example.com', self._get_metadata_for_revision_4()['commiter_email'])
+

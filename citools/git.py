@@ -1,7 +1,12 @@
+from subprocess import CalledProcessError
 from ConfigParser import SafeConfigParser
+from distutils.errors import DistutilsOptionError
+from citools.mongo import get_database_connection
 from tempfile import mkdtemp
 import os
-from subprocess import check_call, PIPE
+from subprocess import check_call, PIPE, Popen
+
+from distutils.core import Command
 
 def fetch_repository(repository, workdir=None, branch=None, cache_config_dir=None, cache_config_file_name="cached_repositories.ini"):
     """
@@ -50,4 +55,110 @@ def fetch_repository(repository, workdir=None, branch=None, cache_config_dir=Non
         f.close()
 
     return dir
+
+
+
+def get_last_revision(collection):
+    pass
+
+def get_revision_metadata_property(changeset, property):
+    cmd = ["git", "log", '--pretty=format:%s' % property, "%(rev)s^..%(rev)s" % {"rev" : changeset}]
+    proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
+    stdout, stderr = proc.communicate()
+    if not proc.returncode == 0:
+        raise CalledProcessError(proc.returncode, cmd)
+
+    return stdout.strip()
+
+
+def get_revision_metadata(changeset, metadata_property_map=None):
+    """
+    Return dictionary of metadatas defined in metadata_property_map.
+
+    Uses slow solution (git log query per property) to avoid "delimiter inside result" problem.
+    """
+
+    metadata = {}
+
+    metadata_property_map = metadata_property_map or {
+        "%h" : "hash_abbrev",
+        "%H" : "hash",
+        "%aN" : "author_name",
+        "%aE" : "author_email",
+        "%cN" : "commiter_name",
+        "%cE" : "commiter_email",
+    }
+    
+    for property in metadata_property_map:
+#        try:
+        metadata[metadata_property_map[property]] = get_revision_metadata_property(changeset, property)
+#        except CalledProcessError:
+#            metadata[metadata_property_map[property]] = "[failed to retrieve]"
+    return metadata
+
+
+def retrieve_repository_metadata(changeset):
+    """
+    Return list of dictionaris with metadata about changesets since revision to current
+    """
+    proc = Popen(["git", "log", r'--pretty=format:%H', "%s.." % changeset], stdout=PIPE, stderr=PIPE)
+    stdout, stderr = proc.communicate()
+    if not proc.returncode == 0:
+        raise CalledProcessError("git log failed for metadata retrieval")
+
+    metadata = []
+    hashes = stdout.splitlines()
+    hashes.reverse()
+    for hash in hashes:
+        metadata.append(get_revision_metadata(hash))
+
+    return metadata
+
+
+
+def store_repository_metadata(data):
+    pass
+
+class SaveRepositoryInformationGit(Command):
+    """ Store repository metadata information in mongo database for cthulhubot usage """
+
+    description = ""
+
+    user_options = [
+        ("mongodb-host=", None, "mongo database host"),
+        ("mongodb-port=", None, "mongo database port"),
+        ("mongodb-username=", None, "mongo connection username"),
+        ("mongodb-password=", None, "mongo connection password"),
+        ("mongodb-database=", None, "mongo database name"),
+        ("mongodb-collection=", None, "mongo collection to store data to"),
+    ]
+
+    def initialize_options(self):
+        self.mongodb_host = None
+
+    def finalize_options(self):
+        self.mongodb_host = self.mongodb_host or "localhost"
+        self.mongodb_port = self.mongodb_host or None
+        self.mongodb_username = self.mongodb_username or None
+        self.mongodb_password = self.mongodb_password or None
+
+        if not self.mongodb_database:
+            raise DistutilsOptionError("Mongodb database not given")
+
+        if not self.mongodb_collection:
+            raise DistutilsOptionError("Mongodb collection not given")
+
+
+    def run(self):
+        collection = get_database_connection(
+            hostname=self.mongodb_host,
+            port=self.mongodb_port,
+            database=self.mongodb_database,
+            username=self.mongodb_username,
+            password=self.mongodb_password
+        )[self.mongodb_collection]
+        
+        changeset = get_last_revision(collection)
+        data = retrieve_repository_metadata(changeset)
+        store_repository_metadata(data)
 

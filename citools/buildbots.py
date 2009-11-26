@@ -6,6 +6,7 @@ from buildbot.steps import shell
 __all__ = (
     "DatabaseBackupRestore", "CriticalTest", "DatabaseBackupRestore",
     "AptitudeInstall", "DatabaseMigrate", "GitSetVersion", "BuildDebianPackage",
+    "CreateDirectory", "BuildSphinxDoc", 
 )
 
 class CriticalShellCommand(shell.ShellCommand):
