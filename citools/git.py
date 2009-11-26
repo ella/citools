@@ -87,6 +87,7 @@ def get_revision_metadata(changeset, metadata_property_map=None):
         "%aE" : "author_email",
         "%cN" : "commiter_name",
         "%cE" : "commiter_email",
+        "%s" : "subject",
     }
     
     for property in metadata_property_map:

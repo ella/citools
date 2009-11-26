@@ -226,3 +226,12 @@ class TestHistoryMetadataRetrieval(GitTestCase):
     def test_simple_diff_contains_commiter_email(self):
         self.assertEquals('dummy-tester@example.com', self._get_metadata_for_revision_4()['commiter_email'])
 
+    def test_simple_diff_contains_subject(self):
+        self.assertEquals('"4"', self._get_metadata_for_revision_4()['subject'])
+
+    def test_whole_history_contains_all_branches(self):
+        self.assertEquals(len(self.revisions), len(retrieve_repository_metadata(str(self.revisions[0]))))
+
+    def test_partial_history_contains_another_branch(self):
+        self.assertEquals(3, len(retrieve_repository_metadata(str(self.revisions[4]))))
+        self.assertEquals([self.revisions[1], self.revisions[2]], [i['hash'] for i in retrieve_repository_metadata(str(self.revisions[4]))[0:2]])
