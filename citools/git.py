@@ -59,7 +59,12 @@ def fetch_repository(repository, workdir=None, branch=None, cache_config_dir=Non
 
 
 def get_last_revision(collection):
-    pass
+    from pymongo import DESCENDING
+    result = collection.find().sort([("$natural", DESCENDING),]).limit(1)
+    if result.count() == 0:
+        return None
+    else:
+        return list(result)[0]['hash']
 
 def get_revision_metadata_property(changeset, property):
     cmd = ["git", "log", '--pretty=format:%s' % property, "%(rev)s^..%(rev)s" % {"rev" : changeset}]
@@ -85,9 +90,12 @@ def get_revision_metadata(changeset, metadata_property_map=None):
         "%H" : "hash",
         "%aN" : "author_name",
         "%aE" : "author_email",
+        "%ad" : "author_date",
         "%cN" : "commiter_name",
         "%cE" : "commiter_email",
+        "%cd" : "commiter_date",
         "%s" : "subject",
+
     }
     
     for property in metadata_property_map:
@@ -114,8 +122,6 @@ def retrieve_repository_metadata(changeset):
         metadata.append(get_revision_metadata(hash))
 
     return metadata
-
-
 
 def store_repository_metadata(data):
     pass
