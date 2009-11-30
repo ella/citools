@@ -5,12 +5,13 @@ from datetime import datetime
 from citools.mongo import get_database_connection
 from citools.git import get_last_revision
 
-class TestLastStoreRetrieval(TestCase):
+from helpers import MongoTestCase
+
+class TestLastStoreRetrieval(MongoTestCase):
 
     def setUp(self):
-        TestCase.setUp(self)
-        self.db = get_database_connection(database="test_citools")
-        self.collection = self.db['repository_information']
+        super(TestLastStoreRetrieval, self).setUp()
+        self.collection = self.database['repository_information']
 
     def test_none_where_no_data_yet(self):
         self.assertEquals(None, get_last_revision(self.collection))
@@ -31,5 +32,3 @@ class TestLastStoreRetrieval(TestCase):
         })
         self.assertEquals(hash, get_last_revision(self.collection))
 
-    def tearDown(self):
-        self.db.drop_collection(self.collection)
