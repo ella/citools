@@ -92,7 +92,7 @@ def filter_parse_date(stdout):
         return datetime.strptime(stdout, "%a %b %d %H:%M:%S %Y")
     except ValueError:
         # +offset provided, strip it out
-        return datetime.strptime(stdout, "%a %b %d %H:%M:%S %Y")[:-6]
+        return datetime.strptime(stdout[:-6], "%a %b %d %H:%M:%S %Y")
     
 
 def get_revision_metadata(changeset, metadata_property_map=None):

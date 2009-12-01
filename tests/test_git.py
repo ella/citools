@@ -7,7 +7,7 @@ from shutil import rmtree
 from tempfile import mkdtemp, mkstemp
 from datetime import datetime
 
-from citools.git import retrieve_repository_metadata, fetch_repository
+from citools.git import retrieve_repository_metadata, fetch_repository, filter_parse_date
 
 class GitTestCase(TestCase):
     def _create_git_repository(self):
@@ -46,6 +46,13 @@ class GitTestCase(TestCase):
         rmtree(self.repo)
         os.chdir(self.oldcwd)
 
+class TestDateParsing(TestCase):
+
+    def test_naive_parsed(self):
+        self.assertEquals(datetime(2009, 12, 1, 20, 58, 01), filter_parse_date('Tue Dec 1 20:58:01 2009'))
+
+    def test_tz_parsed(self):
+        self.assertEquals(datetime(2009, 12, 1, 20, 58, 01), filter_parse_date('Tue Dec 1 20:58:01 2009 +0100'))
 
 class TestRepositoryFetching(GitTestCase):
 
