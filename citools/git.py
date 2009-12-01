@@ -1,7 +1,6 @@
 from subprocess import CalledProcessError
 from ConfigParser import SafeConfigParser
 from distutils.errors import DistutilsOptionError
-from citools.mongo import get_database_connection
 from tempfile import mkdtemp
 import os
 from subprocess import check_call, PIPE, Popen
@@ -167,6 +166,7 @@ class SaveRepositoryInformationGit(Command):
 
 
     def run(self):
+        from citools.mongo import get_database_connection
         collection = get_database_connection(
             hostname=self.mongodb_host,
             port=self.mongodb_port,
