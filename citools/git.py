@@ -123,8 +123,18 @@ def retrieve_repository_metadata(changeset):
 
     return metadata
 
-def store_repository_metadata(data):
-    pass
+def store_repository_metadata(collection, data):
+    for item in data:
+        if 'hash' not in item:
+            raise ValueError("Trying to store metadata for changeset without hash! %s" % str(item))
+        
+        if '_id' not in item:
+            older_version = collection.find_one({'hash' : item['hash']})
+            if older_version:
+                older_version.update(item)
+                item = older_version
+
+        collection.save(item)
 
 class SaveRepositoryInformationGit(Command):
     """ Store repository metadata information in mongo database for cthulhubot usage """

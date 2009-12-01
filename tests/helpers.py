@@ -18,7 +18,7 @@ class MongoTestCase(TestCase):
                 password=None
             )
         except ConnectionFailure:
-            raise SkipTest()
+            raise SkipTest("Cannot connect to mongo database, check your settings")
 
 
     def tearDown(self):
