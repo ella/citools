@@ -12,7 +12,7 @@ class MongoTestCase(TestCase):
             from citools.mongo import get_mongo_and_database_connections
         except ImportError, e:
             import traceback as t
-            raise SkipTest("Error when importing dependencies (pymongo not installed?): %s" % t.format_exception())
+            raise SkipTest("Error when importing dependencies (pymongo not installed?): %s" % t.format_exc())
         try:
             self.database, self.connection = get_mongo_and_database_connections(
                 hostname=os.environ.get("MONGODB_HOSTNAME", "localhost"),
