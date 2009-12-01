@@ -88,10 +88,10 @@ def get_revision_metadata(changeset, metadata_property_map=None):
         "%h" : "hash_abbrev",
         "%H" : "hash",
         "%aN" : "author_name",
-        "%aE" : "author_email",
+        "%ae" : "author_email",
         "%ad" : "author_date",
         "%cN" : "commiter_name",
-        "%cE" : "commiter_email",
+        "%ce" : "commiter_email",
         "%cd" : "commiter_date",
         "%s" : "subject",
 
