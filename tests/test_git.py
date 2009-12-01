@@ -214,6 +214,9 @@ class TestHistoryMetadataRetrieval(GitTestCase):
         self.assertEquals(self.revisions[3], metadata[0]['hash'])
         self.assertEquals(self.revisions[4], metadata[1]['hash'])
 
+    def test_whole_history_returned_when_no_changeset_provided(self):
+        self.assertEquals(6, len(retrieve_repository_metadata(None)))
+
     def test_simple_diff_contains_author_name(self):
         self.assertEquals('dummy-tester', self._get_metadata_for_revision_4()['author_name'])
 

@@ -4,6 +4,9 @@ from distutils.errors import DistutilsOptionError
 from tempfile import mkdtemp
 import os
 from subprocess import check_call, PIPE, Popen
+import logging
+
+log = logging.getLogger("citools.git")
 
 from distutils.core import Command
 
@@ -66,10 +69,13 @@ def get_last_revision(collection):
         return list(result)[0]['hash']
 
 def get_revision_metadata_property(changeset, property):
-    cmd = ["git", "log", '--pretty=format:%s' % property, "%(rev)s^..%(rev)s" % {"rev" : changeset}]
+    cmd = ["git", "show", "--quiet", '--pretty=format:%s' % property, changeset]
     proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
     stdout, stderr = proc.communicate()
-    if not proc.returncode == 0:
+
+    # --quiet causes git show to returncode 1
+    if proc.returncode not in (0, 1):
+        log.error("Cannot retrieve log: stdout: %s stderr: %s" % (stdout, stderr))
         raise CalledProcessError(proc.returncode, cmd)
 
     return stdout.strip()
@@ -109,10 +115,14 @@ def retrieve_repository_metadata(changeset):
     """
     Return list of dictionaris with metadata about changesets since revision to current
     """
-    proc = Popen(["git", "log", r'--pretty=format:%H', "%s.." % changeset], stdout=PIPE, stderr=PIPE)
+    command = ["git", "log", r'--pretty=format:%H']
+    if changeset:
+        command.append("%s.." % changeset)
+    proc = Popen(command, stdout=PIPE, stderr=PIPE)
     stdout, stderr = proc.communicate()
     if not proc.returncode == 0:
-        raise CalledProcessError("git log failed for metadata retrieval")
+        log.error("Cannot retrieve log: stdout: %s stderr: %s" % (stdout, stderr))
+        raise CalledProcessError(proc.returncode, command)
 
     metadata = []
     hashes = stdout.splitlines()
@@ -151,10 +161,15 @@ class SaveRepositoryInformationGit(Command):
 
     def initialize_options(self):
         self.mongodb_host = None
+        self.mongodb_port = None
+        self.mongodb_username = None
+        self.mongodb_password = None
+        self.mongodb_database = None
+        self.mongodb_collection = None
 
     def finalize_options(self):
         self.mongodb_host = self.mongodb_host or "localhost"
-        self.mongodb_port = self.mongodb_host or None
+        self.mongodb_port = self.mongodb_port or 27017
         self.mongodb_username = self.mongodb_username or None
         self.mongodb_password = self.mongodb_password or None
 
@@ -177,5 +192,5 @@ class SaveRepositoryInformationGit(Command):
         
         changeset = get_last_revision(collection)
         data = retrieve_repository_metadata(changeset)
-        store_repository_metadata(data)
+        store_repository_metadata(collection, data)
 
