@@ -5,6 +5,8 @@ from tempfile import mkdtemp
 import os
 from subprocess import check_call, PIPE, Popen
 import logging
+import traceback
+from datetime import datetime
 
 log = logging.getLogger("citools.git")
 
@@ -68,8 +70,11 @@ def get_last_revision(collection):
     else:
         return list(result)[0]['hash']
 
-def get_revision_metadata_property(changeset, property):
-    cmd = ["git", "show", "--quiet", '--pretty=format:%s' % property, changeset]
+def get_revision_metadata_property(changeset, property, filter=None):
+    default_filter = lambda x: x
+    filter = filter or default_filter
+
+    cmd = ["git", "show", "--quiet", '--date=local', '--pretty=format:%s' % property, changeset]
     proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
     stdout, stderr = proc.communicate()
 
@@ -78,8 +83,12 @@ def get_revision_metadata_property(changeset, property):
         log.error("Cannot retrieve log: stdout: %s stderr: %s" % (stdout, stderr))
         raise CalledProcessError(proc.returncode, cmd)
 
-    return stdout.strip()
+    return filter(stdout.strip())
 
+def filter_parse_date(stdout):
+    """ Construct a datetime object from local date string returned by git show """
+    return datetime.strptime(stdout, "%a %b %d %H:%M:%S %Y")
+    
 
 def get_revision_metadata(changeset, metadata_property_map=None):
     """
@@ -91,23 +100,28 @@ def get_revision_metadata(changeset, metadata_property_map=None):
     metadata = {}
 
     metadata_property_map = metadata_property_map or {
-        "%h" : "hash_abbrev",
-        "%H" : "hash",
-        "%aN" : "author_name",
-        "%ae" : "author_email",
-        "%ad" : "author_date",
-        "%cN" : "commiter_name",
-        "%ce" : "commiter_email",
-        "%cd" : "commiter_date",
-        "%s" : "subject",
+        "%h" : {'name' : "hash_abbrev"},
+        "%H" : {'name' : "hash"},
+        "%aN" : {'name' : "author_name"},
+        "%ae" : {'name' : "author_email"},
+        "%ad" : {'name' : "author_date", 'filter' : filter_parse_date},
+        "%cN" : {'name' : "commiter_name"},
+        "%ce" : {'name' : "commiter_email"},
+        "%cd" : {'name' : "commiter_date", 'filter' : filter_parse_date},
+        "%s" : {'name' : "subject"},
 
     }
-    
+
     for property in metadata_property_map:
-#        try:
-        metadata[metadata_property_map[property]] = get_revision_metadata_property(changeset, property)
-#        except CalledProcessError:
-#            metadata[metadata_property_map[property]] = "[failed to retrieve]"
+        if 'filter' in metadata_property_map[property]:
+            filter = metadata_property_map[property]['filter']
+        else:
+            filter = None
+        try:
+            metadata[metadata_property_map[property]['name']] = get_revision_metadata_property(changeset, property, filter)
+        except (CalledProcessError, ValueError):
+            metadata[metadata_property_map[property]['name']] = "[failed to retrieve]"
+            log.error("Error when parsing metadata: %s" % traceback.format_exc())
     return metadata
 
 

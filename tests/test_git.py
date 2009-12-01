@@ -5,6 +5,7 @@ import os
 from subprocess import Popen, PIPE
 from shutil import rmtree
 from tempfile import mkdtemp, mkstemp
+from datetime import datetime
 
 from citools.git import retrieve_repository_metadata, fetch_repository
 
@@ -228,6 +229,9 @@ class TestHistoryMetadataRetrieval(GitTestCase):
 
     def test_simple_diff_contains_commiter_email(self):
         self.assertEquals('dummy-tester@example.com', self._get_metadata_for_revision_4()['commiter_email'])
+
+    def test_date_info_is_datetime(self):
+        self.assertTrue(isinstance(self._get_metadata_for_revision_4()['commiter_date'], datetime))
 
     def test_simple_diff_contains_subject(self):
         self.assertEquals('"4"', self._get_metadata_for_revision_4()['subject'])
