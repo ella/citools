@@ -87,7 +87,12 @@ def get_revision_metadata_property(changeset, property, filter=None):
 
 def filter_parse_date(stdout):
     """ Construct a datetime object from local date string returned by git show """
-    return datetime.strptime(stdout, "%a %b %d %H:%M:%S %Y")
+    #TODO: Refactor to be nicer
+    try:
+        return datetime.strptime(stdout, "%a %b %d %H:%M:%S %Y")
+    except ValueError:
+        # +offset provided, strip it out
+        return datetime.strptime(stdout, "%a %b %d %H:%M:%S %Y")[:-6]
     
 
 def get_revision_metadata(changeset, metadata_property_map=None):
