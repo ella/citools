@@ -11,6 +11,7 @@ from citools.debian.commands import (
     VersionedDependency, replace_versioned_packages,
     replace_versioned_debian_files,
 )
+from citools.debian.control import ControlFile
 
 
 master_control_content_pattern = u"""\
@@ -344,8 +345,13 @@ class TestUpdateDependencyVersions(object):
             'package2_version': '0.2.1',
             'metapackage_version': '0.13.4',
         }
+        exp_lines = expected_control_output.split('\n')
+        for (a, b) in zip(expected_control_output.split('\n'), open(self.test_control).readlines()):
+            if a.strip() != b.strip():
+                print '%s|%s|' % (a.strip(), b.strip())
 
-        assert_equals(expected_control_output, open(self.test_control).read())
+
+        assert_equals(expected_control_output.strip(), open(self.test_control).read().strip())
 
 
     def tearDown(self):
@@ -437,7 +443,12 @@ Description: package with static files with versioned path
         original_version = '0.0.0.0'
 
         control_path = join(self.directory, 'debian', 'control')
-        replace_versioned_debian_files(debian_path=join(self.directory, 'debian'), original_version=original_version, new_version=version)
+        replace_versioned_debian_files(
+                debian_path=join(self.directory, 'debian'),
+                original_version=original_version,
+                new_version=version,
+                control_file=ControlFile(filename=control_path)
+            )
         replace_versioned_packages(control_path=control_path, version=version)
 
 

@@ -42,7 +42,7 @@ class ControlFileParagraph(object):
             if hasattr(self, 'dump_%s' % att_key):
                 value = getattr(self, 'dump_%s' % att_key)(value)
 
-            out.append(': '.join((key, value)))
+            out.append('%s: %s' % (key, value))
         return '\n'.join(out)
     __str__ = dump
 
@@ -77,11 +77,13 @@ class Dependency(object):
                 return '%s-%s' % (self.name, self.version)
         return self.name
 
+    def __repr__(self):
+        return '<Dependency(%r, %r, %r)>' % (self.name, self.version, self.sign)
+
     def is_versioned(self):
         return self.version and not self.sign
 
-def get_dependency(result):
-    name, version, sign = result.name, result.version, result.sign
+def get_dependency(name, sign='', version=''):
     if version and not sign:
         sign = '='
 
@@ -96,6 +98,10 @@ class SourceParagraph(ControlFileParagraph):
     pass
 
 class PackageParagraph(ControlFileParagraph):
+    def parse_package(self, value):
+        return get_dependency(value)
+
+
     def parse_depends(self, value):
         package_name = Word(alphanums + '.-')('name')
         version = Word(nums + '.-')('version')
@@ -110,7 +116,7 @@ class PackageParagraph(ControlFileParagraph):
                 ) | (
                     package_name
                 )
-            ).setParseAction(get_dependency)
+            ).setParseAction(lambda x: get_dependency(x.name, x.sign, x.version))
         dependencies = delimitedList(dependency, ',')
         return dependencies.parseString(value, True).asList()
 
@@ -122,7 +128,12 @@ class ControlFile(object):
     DEFAULT_PACKAGE_PARAGRAPH = """"""
 
 
-    def __init__(self, source=None):
+    def __init__(self, source=None, filename=''):
+        if filename:
+            f = open(filename)
+            source = f.read()
+            f.close
+
         if source:
             paragraphs = source.split('\n\n')
         else:
@@ -143,6 +154,33 @@ class ControlFile(object):
 
     def get_dependencies(self):
         return chain(*(getattr(p, 'depends', []) for p in self.packages))
+
+    def get_versioned_dependencies(self):
+        return [d for d in self.get_dependencies() if d.is_versioned()]
+
+    def get_packages(self):
+        return [p.package for p in self.packages]
+
+    def replace_dependencies(self, deps_from_repositories):
+        new_versions = dict((p.name, p.version) for p in deps_from_repositories)
+        for p in self.get_dependencies():
+            if p.name in new_versions:
+                p.version = new_versions[p.name]
+
+    def replace_versioned_packages(self, version):
+        new_deps = []
+        for p in self.get_packages():
+            if p.version:
+                p.version = version
+                new_deps.append(p)
+        self.replace_dependencies(new_deps)
     
-    def dump(self):
-        return '\n\n'.join(p.dump() for p in [self.source] + self.packages)
+    def dump(self, filename=None):
+        out = '\n\n'.join(p.dump() for p in [self.source] + self.packages)
+        if filename:
+            fout = open(filename, 'w')
+            fout.write(out)
+            fout.close()
+        return out
+
+

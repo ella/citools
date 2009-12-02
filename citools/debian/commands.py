@@ -309,20 +309,23 @@ class ControlParser(object):
         self.replace_dependencies(new_deps)
 
 
+from citools.debian.control import ControlFile
+
+def get_new_dependencies(dir):
+    cfile = ControlFile(filename=os.path.join(dir, 'debian', 'control'))
+    packages = cfile.get_packages()
+
+    version = ".".join(map(str, compute_version(get_git_describe(repository_directory=dir, fix_environment=True))))
+    for p in packages:
+        p.version = version
+
+    return packages
+
 def fetch_new_dependencies(repository):
     repo = fetch_repository(
         repository=repository['url'], branch=repository['branch']
     )
     deps = get_new_dependencies(repo)
-
-    return deps
-
-def get_new_dependencies(dir):
-    parser = ControlParser(open(os.path.join(dir, 'debian', 'control')).read())
-    packages = parser.get_packages()
-
-    version = ".".join(map(str, compute_version(get_git_describe(repository_directory=dir, fix_environment=True))))
-    deps = [Dependency(str(package), version) for package in packages]
 
     return deps
 
@@ -340,11 +343,8 @@ def replace_versioned_packages(control_path, version, workdir=None):
     f.close
 
 
-def replace_versioned_debian_files(debian_path, original_version, new_version):
-    f = open(os.path.join(debian_path, 'control'))
-    parser = ControlParser(f.read())
-    f.close()
-    versioned_deps = parser.get_versioned_dependencies()
+def replace_versioned_debian_files(debian_path, original_version, new_version, control_file):
+    versioned_deps = control_file.get_versioned_dependencies()
     for path, dirs, files in walk(debian_path):
         for file in files:
             for dep in versioned_deps:
@@ -372,19 +372,16 @@ def update_dependency_versions(repositories, control_path, workdir=None):
     If any versioned dependencies are present, replace them too, as well as debian files
     """
     workdir = workdir or os.curdir
-    f = open(control_path)
-    meta_parser = ControlParser(f.read())
-    f.close()
+    cfile = ControlFile(filename=control_path)
 
     deps_from_repositories = []
 
     current_meta_version = None
-    for package in meta_parser.get_versioned_dependencies():
-        if package.version:
-            if not current_meta_version:
-                current_meta_version = package.version
-            else:
-                assert current_meta_version == package.version, "Versioned packages with different versions, aborting"
+    for package in cfile.get_versioned_dependencies():
+        if not current_meta_version:
+            current_meta_version = package.version
+        else:
+            assert current_meta_version == package.version, "Versioned packages with different versions, aborting"
 
     for repository in repositories:
         deps = fetch_new_dependencies(repository)
@@ -404,16 +401,14 @@ def update_dependency_versions(repositories, control_path, workdir=None):
         dep.version = meta_version_string
     deps_from_repositories.extend(deps)
 
-    meta_parser.replace_dependencies(deps_from_repositories)
-
-    f = open(control_path, 'w')
-    f.write(meta_parser.control_file)
-    f.close()
+    cfile.replace_dependencies(deps_from_repositories)
 
     # if versioned packages present, replace'em
     if current_meta_version:
-        replace_versioned_debian_files(debian_path=dirname(control_path), original_version=current_meta_version, new_version=meta_version_string)
-        replace_versioned_packages(control_path=control_path, version=meta_version_string)
+        replace_versioned_debian_files(debian_path=dirname(control_path), original_version=current_meta_version, new_version=meta_version_string, control_file=cfile)
+        cfile.replace_versioned_packages(version)
+
+    cfile.dump(control_path)
 
 
 class UpdateDependencyVersions(Command):

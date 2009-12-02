@@ -53,6 +53,13 @@ def test_basic_sanity():
 # {{{  Test PackageParagraph
 ##############################################################################
 
+def test_package_parses_versioned_package():
+    package = 'python-django-1.1'
+    parsed = PackageParagraph('').parse_package(package)
+    assert_equals('python-django', parsed.name)
+    assert_equals('1.1', parsed.version)
+    assert_equals(True, parsed.is_versioned())
+
 def test_dependency_parses_version_info():
     package = 'python-django (>= 1.1)'
     parsed = PackageParagraph('').parse_depends(package)
