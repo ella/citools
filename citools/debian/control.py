@@ -4,6 +4,7 @@ from pyparsing import (
         alphanums, Literal, Combine, ZeroOrMore, Dict, nums,
         Optional, delimitedList
     )
+from itertools import chain
 
 class ControlFileParagraph(object):
     def __init__(self, source):
@@ -76,6 +77,9 @@ class Dependency(object):
                 return '%s-%s' % (self.name, self.version)
         return self.name
 
+    def is_versioned(self):
+        return self.version and not self.sign
+
 def get_dependency(result):
     name, version, sign = result.name, result.version, result.sign
     if version and not sign:
@@ -89,10 +93,13 @@ def get_dependency(result):
     return Dependency(name, version, sign)
 
 class SourceParagraph(ControlFileParagraph):
+    pass
+
+class PackageParagraph(ControlFileParagraph):
     def parse_depends(self, value):
         package_name = Word(alphanums + '.-')('name')
         version = Word(nums + '.-')('version')
-        sign = reduce(or_, map(Literal, ('=>', '=<', '=',)))('sign')
+        sign = reduce(or_, map(Literal, ('>=', '<=', '=',)))('sign')
         dependency = (
                 (
                     package_name +
@@ -105,15 +112,10 @@ class SourceParagraph(ControlFileParagraph):
                 )
             ).setParseAction(get_dependency)
         dependencies = delimitedList(dependency, ',')
-        return dependency.parseString(value, True).asList()
+        return dependencies.parseString(value, True).asList()
 
     def dump_depends(self, value):
         return ', '.join(map(str, value))
-
-
-class PackageParagraph(ControlFileParagraph):
-    pass
-        
 
 class ControlFile(object):
     DEFAULT_SOURCE_PARAGRAPH = """"""
@@ -127,14 +129,20 @@ class ControlFile(object):
             paragraphs = [self.DEFAULT_SOURCE_PARAGRAPH]
 
         if not paragraphs:
+            # FIXME - add some exception
             raise xxx
-        self._source = SourceParagraph(paragraphs[0])
-        self._packages = []
+        self.source = SourceParagraph(paragraphs[0])
+        self.packages = []
         for s in paragraphs[1:]:
             self.add_package(s)
 
     def add_package(self, source=None):
         package = PackageParagraph(source or self.DEFAULT_PACKAGE_PARAGRAPH)
-        self._packages.append(package)
+        self.packages.append(package)
         return package
+
+    def get_dependencies(self):
+        return chain(*(getattr(p, 'depends', []) for p in self.packages))
     
+    def dump(self):
+        return '\n\n'.join(p.dump() for p in [self.source] + self.packages)
