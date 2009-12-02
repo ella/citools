@@ -6,7 +6,7 @@ from tempfile import mkdtemp
 
 from nose.tools import assert_equals, assert_raises, assert_true
 
-from citools.debian import (
+from citools.debian.commands import (
     ControlParser, update_dependency_versions, Dependency,
     VersionedDependency, replace_versioned_packages,
     replace_versioned_debian_files,
