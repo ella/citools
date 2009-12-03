@@ -235,6 +235,10 @@ def test_control_file_dump2():
     cfile = ControlFile(dc)
     assert_equals([l.strip() for l in dc.splitlines()], [l.strip() for l in cfile.dump().splitlines()])
 
+def test_upgrade_to_multicipher_version_passes_downgrade_check():
+    cfile = ControlFile()
+    assert_true(cfile.check_downgrade('0.5.0.0', '0.17.0.114'))
+
 ##############################################################################
 # }}}
 

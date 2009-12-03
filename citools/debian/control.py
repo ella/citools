@@ -162,11 +162,36 @@ class ControlFile(object):
     def get_packages(self):
         return [p.package for p in self.packages]
 
+    def check_downgrade(self, current_version, new_version):
+        """
+        Raise ValueError if new_version is lower then current_version
+        """
+        curr_tuple = map(int, current_version.split("."))
+        new_tuple = map(int, new_version.split("."))
+
+
+        for i in xrange(0, len(curr_tuple)):
+            if len(new_tuple) < (i+1):
+                raise ValueError("Attempt to downgrade %s to %s" % (
+                    current_version,
+                    new_version,
+                ))
+            elif new_tuple[i] > curr_tuple[i]:
+                return True
+            elif (new_tuple[i] < curr_tuple[i]):
+                raise ValueError("Attempt to downgrade %s to %s" % (
+                    current_version,
+                    new_version,
+                ))
+        return True
+
     def replace_dependencies(self, deps_from_repositories):
         new_versions = dict((p.name, p.version) for p in deps_from_repositories)
         for p in self.get_dependencies():
             if p.name in new_versions:
-                p.version = new_versions[p.name]
+                new_version = new_versions[p.name]
+                self.check_downgrade(p.version, new_version)
+                p.version = new_version
 
     def replace_versioned_packages(self, version):
         new_deps = []
