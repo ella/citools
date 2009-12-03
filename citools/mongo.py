@@ -6,8 +6,8 @@ import logging
 
 log = logging.getLogger("citools.mongo")
 
-def get_mongo_and_database_connections(hostname=None, port=None, database=None, username=None, password=None):
-    connection = Connection(hostname, port)
+def get_mongo_and_database_connections(hostname=None, port=27017, database=None, username=None, password=None):
+    connection = Connection(hostname, int(port))
 
     database = connection[database]
 
