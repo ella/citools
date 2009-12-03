@@ -332,16 +332,9 @@ def fetch_new_dependencies(repository):
 
 def replace_versioned_packages(control_path, version, workdir=None):
     workdir = workdir or os.curdir
-    f = open(control_path)
-    parser = ControlParser(f.read())
-    f.close()
-
-    parser.replace_versioned_packages(version)
-
-    f = open(control_path, 'w')
-    f.write(parser.control_file)
-    f.close
-
+    cfile = ControlFile(filename=control_path)
+    cfile.replace_versioned_packages(version)
+    cfile.dump(control_path)
 
 def replace_versioned_debian_files(debian_path, original_version, new_version, control_file):
     versioned_deps = control_file.get_versioned_dependencies()

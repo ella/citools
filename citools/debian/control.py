@@ -17,16 +17,17 @@ class ControlFileParagraph(object):
         EOL = LineEnd().suppress()
         string = CharsNotIn("\n")
         line = Group(
-            Word(alphanums + '-')('key') + (Literal(':').suppress() + Combine(string + ZeroOrMore(EOL + Literal(' ') + string)))("value") + EOL
+            Word(alphanums + '-')('key') + Literal(':').suppress() + Optional(Combine(string + ZeroOrMore(EOL + Literal(' ') + string)))("value") + EOL
         )
         group = ZeroOrMore(line)
-        return group.parseString(source).asList()
+        return group.parseString(source, True)
 
     def _att_key(self, key):
         return key.lower().replace('-', '_')
 
     def _parse(self, source):
-        for key, value in self._parse_items(source):
+        for row in self._parse_items(source):
+            key, value = row.key, row.value
             att_key = self._att_key(key)
             if hasattr(self, 'parse_%s' % att_key):
                 value = getattr(self, 'parse_%s' % att_key)(value)
@@ -117,7 +118,7 @@ class PackageParagraph(ControlFileParagraph):
                     package_name
                 )
             ).setParseAction(lambda x: get_dependency(x.name, x.sign, x.version))
-        dependencies = delimitedList(dependency, ',')
+        dependencies = Optional(delimitedList(dependency, ','))
         return dependencies.parseString(value, True).asList()
 
     def dump_depends(self, value):

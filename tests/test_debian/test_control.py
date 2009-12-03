@@ -109,6 +109,15 @@ def test_dependency_parses_versioned_package():
     assert_equals('python-django', dep.name)
     assert_equals('1.1', dep.version)
 
+def test_package_pargraph_deals_with_empty_depends():
+    package = '''\
+Package: package-with-static-files-%(version)s
+Architecture: all
+Depends:
+Description: package with static files with versioned path
+'''
+    parsed = PackageParagraph(package)
+
 ##############################################################################
 # }}}
 
@@ -202,6 +211,29 @@ def test_control_file_dump():
     cf = ControlFile(cfile)
     assert_equals(cfile.strip(), cf.dump())
 
+debian_control = '''\
+Source: package-with-static-files
+Section: python
+Priority: optional
+Maintainer: John Doe <john@doe.com>
+Build-Depends: cdbs (>= 0.4.41), debhelper (>= 5.0.37.2), python-dev, python-support (>= 0.3), python-setuptools
+Standards-Version: 3.7.2
+
+Package: package-with-static-files
+Architecture: all
+Depends: package-with-static-files-%(version)s
+Description: package with static files without version in path
+
+Package: package-with-static-files-%(version)s
+Architecture: all
+Depends:
+Description: package with static files with versioned path
+'''
+
+def test_control_file_dump2():
+    dc = debian_control % {'version': '0.0.0.0'}
+    cfile = ControlFile(dc)
+    assert_equals([l.strip() for l in dc.splitlines()], [l.strip() for l in cfile.dump().splitlines()])
 
 ##############################################################################
 # }}}

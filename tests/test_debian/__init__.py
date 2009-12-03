@@ -345,12 +345,6 @@ class TestUpdateDependencyVersions(object):
             'package2_version': '0.2.1',
             'metapackage_version': '0.13.4',
         }
-        exp_lines = expected_control_output.split('\n')
-        for (a, b) in zip(expected_control_output.split('\n'), open(self.test_control).readlines()):
-            if a.strip() != b.strip():
-                print '%s|%s|' % (a.strip(), b.strip())
-
-
         assert_equals(expected_control_output.strip(), open(self.test_control).read().strip())
 
 
@@ -378,7 +372,7 @@ Description: package with static files without version in path
 
 Package: package-with-static-files-%(version)s
 Architecture: all
-Depends:
+Depends: 
 Description: package with static files with versioned path
 '''
 
@@ -456,7 +450,7 @@ Description: package with static files with versioned path
         expected_structure = sorted((
             (join('.'), None),
             (join('.', 'debian'), None),
-            (join('.', 'debian', 'control'), self.debian_control % {'version': version,}),
+            (join('.', 'debian', 'control'), self.debian_control.strip() % {'version': version,}),
             (join('.', 'debian', 'package-with-static-files.dirs'), self.debian_package_dirs),
             (join('.', 'debian', 'package-with-static-files.install'), self.debian_package_install),
             (join('.', 'debian', 'package-with-static-files-1.2.3.dirs'), self.debian_package_version_dirs % {'version': version,}),
