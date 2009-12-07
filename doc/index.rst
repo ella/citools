@@ -17,7 +17,7 @@ Licensed under `BSD <http://www.opensource.org/licenses/bsd-license.php>`_, this
 On (continuous) versioning
 ----------------------------
 
-Idea is simple: if you should be able to deploy software any time, every revision must have a release number. Thus, we have a "stable" version prefix, which we assume to be set by tag. Last digit in version is build number, thus number of commits since last tag [#fLastTag]_. Number of digits in your version is arbitrary, but must be at least three (two for version prefix, like projectname-1, and one for build number). 
+Idea is simple: if you should be able to deploy software any time, every revision must have a release number. Thus, we have a "stable" version prefix, which we assume to be set by tag. Last digit in version is build number, thus number of commits since last tag [#fLastTag]_. Number of digits in your version is arbitrary, but must be at least three (two for version prefix, like projectname-1, and one for build number).
 
 Then, version must be replaced in all files needed. We're now rewriting in following form in following places:
 # VERSION in $project/__init__.py is set to version tuple (not string). We're assuming layout as in our `django-base-library <http://github.com/ella/django-base-library/blob/84e9c6a07fb1e69b16e386b6bada39eeda1c8dde/djangobaselibrary/__init__.py>`_ (which is actually not much about Django).
@@ -37,6 +37,8 @@ You must only specify repositories You depend upon in arguments for setuptools.s
     ]
 
 By running ``setup.py compute_meta_version_git``, library version will be computed as it's own version + sum of all versions of all child libraries.
+
+Specification via setup.py argument will be deprecated, you should use command line arguments instead.
 
 ----------------------------
 (Django) web environment

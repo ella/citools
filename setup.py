@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 
-VERSION = (0, 1, 0)
+VERSION = (0, 2, 0)
 __version__ = VERSION
 __versionstr__ = '.'.join(map(str, VERSION))
 
@@ -62,6 +62,7 @@ setup(
             'update_dependency_versions = citools.debian:UpdateDependencyVersions',
             'copy_dependency_images = citools.build:CopyDependencyImages',
             'buildbot_ping_git = citools.buildbots:BuildbotPingGit',
+            'save_repository_information_git = citools.git:SaveRepositoryInformationGit',
         ],
         "distutils.setup_keywords": [
             "dependencies_git_repositories = citools.version:validate_repositories",
