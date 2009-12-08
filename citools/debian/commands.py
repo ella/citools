@@ -5,9 +5,9 @@ import re
 from subprocess import check_call
 
 from distutils.core import Command
-from citools.version import get_git_describe, compute_version, compute_meta_version, get_git_head_hash
 
-from os import walk
+from citools.version import get_git_describe, compute_version, compute_meta_version, get_git_head_hash
+from citools.debian.control import ControlFile, Dependency
 from citools.git import fetch_repository
 
 
@@ -40,8 +40,6 @@ class BuildDebianPackage(Command):
         check_call(['dpkg-buildpackage', '-rfakeroot', '-us', '-uc'])
 
 
-from citools.debian.control import ControlFile
-
 def get_new_dependencies(dir):
     cfile = ControlFile(filename=os.path.join(dir, 'debian', 'control'))
     packages = cfile.get_packages()
@@ -69,7 +67,7 @@ def replace_versioned_packages(control_path, version, workdir=None):
 
 def replace_versioned_debian_files(debian_path, original_version, new_version, control_file):
     versioned_deps = control_file.get_versioned_dependencies()
-    for path, dirs, files in walk(debian_path):
+    for path, dirs, files in os.walk(debian_path):
         for file in files:
             for dep in versioned_deps:
                 s = "%s-%s" % (dep.name, original_version)
@@ -253,8 +251,30 @@ class CreateDebianMetaPackage(Command):
         ("bdist_deb", None),
     ]
 
+def parse_setuppy_dependency(package):
+    package = 'python-' + package
+    if '=' in package:
+        i = package.index('=')
+        offset = 0
+        if package[package.rindex('=')-1] in ('<', '>', '='):
+            offset = 1
+
+        name, sign, version = package[:i-offset], package[i-offset:i+1], package[i+1:]
+        return Dependency(name, version, sign)
+    return Dependency(package)
+
+
 def create_debianization(name, description, maintainer, install_requires):
-    pass
+    cf = ControlFile()
+    src = cf.source
+    p = cf.add_package()
+    src['Source'] = p['Package'] = 'python-' + name
+    p['Description'] = description
+    src['Maintainer'] = maintainer
+
+    for package in install_requires:
+        p['Depends'].append(parse_setuppy_dependency(package))
+    print cf.dump()
 
 class CreateDebianization(Command):
     description = ""
