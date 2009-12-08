@@ -14,6 +14,7 @@ from citools.git import fetch_repository
 __all__ = (
     "BuildDebianPackage", "UpdateDebianVersion",
     "CreateDebianPackage", "CreateDebianMetaPackage",
+    "CreateDebianization",
 )
 
 
@@ -252,3 +253,25 @@ class CreateDebianMetaPackage(Command):
         ("bdist_deb", None),
     ]
 
+def create_debianization(name, description, maintainer, install_requires):
+    pass
+
+class CreateDebianization(Command):
+    description = ""
+
+    user_options = [
+    ]
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        create_debianization(
+            self.distribution.get_name(),
+            self.distribution.get_description(),
+            self.distribution.get_maintainer_email(),
+            self.distribution.install_requires,
+        )
