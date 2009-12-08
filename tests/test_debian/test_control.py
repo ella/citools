@@ -9,7 +9,7 @@ from citools.debian.control import ControlFileParagraph, SourceParagraph, \
 def test_multiline_values_work():
     source = 'key1: value1\nkey2: value\n on more\n lines'
     par = ControlFileParagraph(source)
-    assert_equals('value on more lines', par.key2)
+    assert_equals('value on more lines', par['key2'])
 
 def test_custom_parsing_hooks_get_fired():
     class MyControlFileParagraph(ControlFileParagraph):
@@ -17,28 +17,28 @@ def test_custom_parsing_hooks_get_fired():
             return 'X%sX' % value
     source = 'key1: value1\nMy-Key: my custom value'
     par = MyControlFileParagraph(source)
-    assert_equals('Xmy custom valueX', par.my_key)
-    assert_equals('value1', par.key1)
+    assert_equals('Xmy custom valueX', par['my_key'])
+    assert_equals('value1', par['key1'])
 
 def test_defining_params():
     par = ControlFileParagraph('')
-    assert_raises(AttributeError, getattr, par, 'xx')
-    par.xx = 12
-    assert_equals(12, par.xx)
+    assert_raises(KeyError, lambda: par['xx'])
+    par['xx'] = 12
+    assert_equals(12, par['xx'])
 
 def test_dumping_works():
     par = ControlFileParagraph('')
-    par.xx = "12"
-    par.xy = "42"
-    assert_equals('xx: 12\nxy: 42', par.dump())
+    par['Xx'] = "12"
+    par['xy'] = "42"
+    assert_equals('Xx: 12\nxy: 42', par.dump())
 
 def test_custom_dump_hooks():
     class MyControlFileParagraph(ControlFileParagraph):
         def dump_mykey(self, value):
             return 'XX'.join(value)
     par = MyControlFileParagraph('')
-    par.xx = "12"
-    par.mykey = ['a', 'b', 'c']
+    par['xx'] = "12"
+    par['mykey'] = ['a', 'b', 'c']
     assert_equals('xx: 12\nmykey: aXXbXXc', par.dump())
 
 def test_basic_sanity():

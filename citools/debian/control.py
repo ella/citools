@@ -6,11 +6,11 @@ from pyparsing import (
     )
 from itertools import chain
 
-class ControlFileParagraph(object):
+class ControlFileParagraph(dict):
     def __init__(self, source):
-        self._values = {}
         self._keys = []
         self._parse(source)
+        super(ControlFileParagraph, self).__init__()
 
     def _parse_items(self, source):
         ParserElement.setDefaultWhitespaceChars(' \t\r')
@@ -32,14 +32,13 @@ class ControlFileParagraph(object):
             if hasattr(self, 'parse_%s' % att_key):
                 value = getattr(self, 'parse_%s' % att_key)(value)
 
-            self._values[att_key] = value
-            self._keys.append(key)
+            self[key] = value
 
     def dump(self):
         out = []
         for key in self._keys:
             att_key = self._att_key(key)
-            value = self._values[att_key]
+            value = self[att_key]
             if hasattr(self, 'dump_%s' % att_key):
                 value = getattr(self, 'dump_%s' % att_key)(value)
 
@@ -51,20 +50,19 @@ class ControlFileParagraph(object):
         try:
             return '<ControlFileParagraph: %s>' % self
         except:
-            return '<ControlFileParagraph: %r>' % self._values
+            return '<ControlFileParagraph: %r>' % super(ControlFileParagraph, self).__repr__()
 
-    def __getattr__(self, name):
-        try:
-            return self._values[name]
-        except KeyError, e:
-            raise AttributeError
+    def __getitem__(self, name):
+        att_key = self._att_key(name)
+        return super(ControlFileParagraph, self).__getitem__(att_key)
 
-    def __setattr__(self, name, value):
-        if name[0] == '_':
-            return super(ControlFileParagraph, self).__setattr__(name, value)
-        if name not in self._values:
+    def __setitem__(self, name, value):
+        att_key = self._att_key(name)
+        if att_key in self:
+            super(ControlFileParagraph, self).__setitem__(att_key, value)
+        else:
             self._keys.append(name)
-        self._values[name] = value
+            super(ControlFileParagraph, self).__setitem__(att_key, value)
 
 class Dependency(object):
     def __init__(self, name, version='', sign=''):
@@ -102,7 +100,6 @@ class PackageParagraph(ControlFileParagraph):
     def parse_package(self, value):
         return get_dependency(value)
 
-
     def parse_depends(self, value):
         package_name = Word(alphanums + '.-')('name')
         version = Word(nums + '.-')('version')
@@ -125,9 +122,15 @@ class PackageParagraph(ControlFileParagraph):
         return ', '.join(map(str, value))
 
 class ControlFile(object):
-    DEFAULT_SOURCE_PARAGRAPH = """"""
-    DEFAULT_PACKAGE_PARAGRAPH = """"""
+    DEFAULT_SOURCE_PARAGRAPH = """Section: python
+Priority: optional
+Build-Depends: cdbs (>= 0.4.41), debhelper (>= 5.0.37.2), python-dev, python-support (>= 0.3), python-setuptools
+Standards-Version: 3.7.2
+"""
 
+    DEFAULT_PACKAGE_PARAGRAPH = """Architecture: all
+Depends: python (>= 2.5.0)
+"""
 
     def __init__(self, source=None, filename=''):
         if filename:
@@ -154,13 +157,13 @@ class ControlFile(object):
         return package
 
     def get_dependencies(self):
-        return chain(*(getattr(p, 'depends', []) for p in self.packages))
+        return chain(*(p.get('depends', []) for p in self.packages))
 
     def get_versioned_dependencies(self):
         return [d for d in self.get_dependencies() if d.is_versioned()]
 
     def get_packages(self):
-        return [p.package for p in self.packages]
+        return [p['package'] for p in self.packages]
 
     def check_downgrade(self, current_version, new_version):
         """
