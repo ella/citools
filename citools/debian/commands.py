@@ -253,7 +253,7 @@ class CreateDebianMetaPackage(Command):
     ]
 
 def parse_setuppy_dependency(package):
-    package = 'python-' + package
+    package = 'python-' + package.replace('_', '-')
     if '=' in package:
         i = package.index('=')
         offset = 0
@@ -270,7 +270,7 @@ def create_debianization(name, version, description, maintainer, install_require
         raise XXX
 
     # default values
-    name = 'python-' + name
+    name = 'python-' + name.replace('_', '-')
     if maintainer == 'UNKNOWN':
         maintainer = 'CH content team <pg-content-dev@chconf.com>'
 
@@ -321,6 +321,7 @@ class CreateDebianization(Command):
         pass
 
     def run(self):
+        # TODO: build dependencies
         create_debianization(
             self.distribution.get_name(),
             self.distribution.get_version(),
