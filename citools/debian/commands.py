@@ -1,5 +1,6 @@
 import os
-from os.path import dirname
+from shutil import copytree
+from os.path import dirname, exists, join
 from popen2 import Popen3
 import re
 from subprocess import check_call
@@ -264,17 +265,48 @@ def parse_setuppy_dependency(package):
     return Dependency(package)
 
 
-def create_debianization(name, description, maintainer, install_requires):
+def create_debianization(name, version, description, maintainer, install_requires):
+    if exists('debian'):
+        raise XXX
+
+    # default values
+    name = 'python-' + name
+    if maintainer == 'UNKNOWN':
+        maintainer = 'CH content team <pg-content-dev@chconf.com>'
+
+    if not version:
+        version = '0.0.0'
+
+
+    copytree(join(dirname(__file__), 'default_debianization'), 'debian')
+    for root, dirs, files in os.walk('debian'):
+        for f in files:
+            file = join(root, f)
+            with open(file) as fin:
+                content = fin.read()
+
+            for key, value in (
+                ('#NAME#', name),
+                ('#MAINTAINER#', maintainer),
+                ('#VERSION#', version)):
+                content = content.replace(key, value)
+
+            with open(file, 'w') as fout:
+                fout.write(content)
+
     cf = ControlFile()
     src = cf.source
     p = cf.add_package()
-    src['Source'] = p['Package'] = 'python-' + name
-    p['Description'] = description
+    src['Source'] = p['Package'] = name
+    p['Description'] = description.replace('\n', '\n ')
     src['Maintainer'] = maintainer
 
-    for package in install_requires:
-        p['Depends'].append(parse_setuppy_dependency(package))
-    print cf.dump()
+    if install_requires:
+        for package in install_requires:
+            p['Depends'].append(parse_setuppy_dependency(package))
+    cf.dump('debian/control')
+
+
 
 class CreateDebianization(Command):
     description = ""
@@ -291,6 +323,7 @@ class CreateDebianization(Command):
     def run(self):
         create_debianization(
             self.distribution.get_name(),
+            self.distribution.get_version(),
             self.distribution.get_description(),
             self.distribution.get_maintainer_email(),
             self.distribution.install_requires,
