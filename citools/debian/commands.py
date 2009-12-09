@@ -294,12 +294,12 @@ def create_debianization(name, version, description, maintainer, install_require
             with open(file, 'w') as fout:
                 fout.write(content)
 
-    cf = ControlFile()
+    cf = ControlFile(filename='debian/control')
     src = cf.source
-    p = cf.add_package()
+    p = cf.packages[0]
     src['Source'] = p['Package'] = name
-    p['Description'] = description.replace('\n', '\n ')
     src['Maintainer'] = maintainer
+    p['Description'] = description.strip().replace('\n', '\n ')
 
     if install_requires:
         for package in install_requires:

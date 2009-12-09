@@ -101,7 +101,7 @@ class PackageParagraph(ControlFileParagraph):
         return get_dependency(value)
 
     def parse_depends(self, value):
-        package_name = Word(alphanums + '.-')('name')
+        package_name = Word(alphanums + '.-${}:')('name')
         version = Word(nums + '.-')('version')
         sign = reduce(or_, map(Literal, ('>=', '<=', '=',)))('sign')
         dependency = (
@@ -149,7 +149,8 @@ Depends: python (>= 2.5.0)
         self.source = SourceParagraph(paragraphs[0])
         self.packages = []
         for s in paragraphs[1:]:
-            self.add_package(s)
+            if s:
+                self.add_package(s)
 
     def add_package(self, source=None):
         package = PackageParagraph(source or self.DEFAULT_PACKAGE_PARAGRAPH)
