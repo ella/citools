@@ -2,7 +2,7 @@ from operator import or_
 from pyparsing import (
         ParserElement, LineEnd, CharsNotIn, Group, Word,
         alphanums, Literal, Combine, ZeroOrMore, Dict, nums,
-        Optional, delimitedList
+        Optional, delimitedList, restOfLine
     )
 from itertools import chain
 
@@ -15,11 +15,13 @@ class ControlFileParagraph(dict):
     def _parse_items(self, source):
         ParserElement.setDefaultWhitespaceChars(' \t\r')
         EOL = LineEnd().suppress()
+        comment = Literal('#') + Optional( restOfLine ) + EOL
         string = CharsNotIn("\n")
         line = Group(
             Word(alphanums + '-')('key') + Literal(':').suppress() + Optional(Combine(string + ZeroOrMore(EOL + Literal(' ') + string)))("value") + EOL
         )
         group = ZeroOrMore(line)
+        group.ignore(comment)
         return group.parseString(source, True)
 
     def _att_key(self, key):
