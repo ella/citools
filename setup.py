@@ -55,6 +55,7 @@ setup(
         'distutils.commands' : [
             'compute_version_git = citools.version:GitSetVersion',
             'compute_version_meta_git = citools.version:GitSetMetaVersion',
+            'create_debianization = citools.debian:CreateDebianization',
             'update_debian_version = citools.debian:UpdateDebianVersion',
             'create_debian_package = citools.debian:CreateDebianPackage',
             'create_debian_meta_package = citools.debian:CreateDebianMetaPackage',

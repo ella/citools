@@ -6,11 +6,12 @@ from tempfile import mkdtemp
 
 from nose.tools import assert_equals, assert_raises, assert_true
 
-from citools.debian import (
-    ControlParser, update_dependency_versions, Dependency,
-    VersionedDependency, replace_versioned_packages,
+from citools.debian.commands import (
+    update_dependency_versions,
+    replace_versioned_packages,
     replace_versioned_debian_files,
 )
+from citools.debian.control import ControlFile
 
 
 master_control_content_pattern = u"""\
@@ -73,187 +74,8 @@ class DependencyTestCase(object):
                 str([str(i) for i in retrieved])
             ))
 
-class TestControlParsing(DependencyTestCase):
-    def setUp(self):
-        self.test_control= master_control_content_pattern % {
-            'package1_name': 'package1',
-            'package2_name': 'package2',
-            'package1_version': '0.1.0',
-            'package2_version': '0.2.0',
-            'metapackage_version': '0.10.0',
-        }
-
-        self.dependencies_list = [
-            "centrum-python-package1-aaa",
-            "centrum-python-package2-aaa",
-            "centrum-python-package1-bbb",
-            "centrum-python-package2-bbb",
-            "centrum-python-metapackage-aaa",
-        ]
-        self.dependencies_list.sort()
-
-    def test_dependency_list_retrieved_from_file(self):
-        retrieved = [i.name for i in ControlParser(self.test_control).get_dependencies()]
-        retrieved.sort()
-
-        assert_equals(self.dependencies_list, retrieved)
-
-    def test_dependency_list_retrieved_from_line(self):
-        assert_equals(["centrum-python-package1-aaa", "centrum-python-package2-aaa"],
-            [i.name for i in ControlParser(self.test_control).parse_dependency_line("Depends: centrum-python-package1-aaa, centrum-python-package2-aaa (= 0.2.0)")]
-        )
-
-    def test_dependency_list_retrieved_from_line_with_version(self):
-        self.assert_dependencies_equals([Dependency("centrum-python-package2-aaa", "0.2.0"), Dependency("centrum-python-package1-aaa")],
-            ControlParser(self.test_control).parse_dependency_line("Depends: centrum-python-package1-aaa, centrum-python-package2-aaa (= 0.2.0)"),
-        )
-
-    def test_dependency_list_retrieved_for_versioned_package(self):
-        self.assert_dependencies_equals([VersionedDependency(name="package-static", version="0.5.5"), Dependency(name="package-static")],
-            ControlParser(self.test_control).parse_dependency_line("Depends: package-static, package-static-0.5.5"),
-        )
-
-    def test_versioned_package_name_recognized(self):
-        assert_equals("package2-with-static-files",
-            ControlParser(self.test_control).parse_package_line("Package: package2-with-static-files-0.3.25")[0].name
-        )
-
-    def test_versioned_package_name_version_recognized(self):
-        assert_equals("0.3.25",
-            ControlParser(self.test_control).parse_package_line("Package: package-with-static-files-0.3.25")[0].version
-        )
-
-    def test_versioned_package_name_replaced(self):
-        parser = ControlParser("Package: package-with-static-files-0.5.0")
-        parser.replace_versioned_packages(version="1.5.78")
-
-        assert_equals("Package: package-with-static-files-1.5.78", parser.control_file.strip())
-
-        
-
-    def test_depencies_replaced(self):
-        self.expected_replaced = master_control_content_pattern % {
-            'package1_name': 'package1',
-            'package2_name': 'package2',
-            'package1_version': '0.1.0',
-            'package2_version': '0.2.1',
-            'metapackage_version': '0.10.0',
-        }
-
-        parser = ControlParser(self.test_control)
-        parser.replace_dependencies(
-            dependencies = [Dependency("centrum-python-package2-aaa", "0.2.1"), Dependency("centrum-python-package2-bbb", "0.2.1"),]
-        )
-
-        assert_equals(self.expected_replaced, parser.control_file)
-
-    def test_debversion_parsing_simple(self):
-        dep = Dependency(u"")
-        dep.extract_version_from_debversion(" (= 0.5.0.0)")
-        assert_equals("0.5.0.0",  dep.version)
-
-    def test_debversion_parsing_with_noneqaual_signs(self):
-        dep = Dependency(u"")
-        dep.extract_version_from_debversion(" (>= 0.1)")
-        assert_equals(">=",  dep.sign)
-        # sanity check
-        assert_equals("0.1",  dep.version)
-
-    def test_packages_retrieved(self):
-        parser = ControlParser(self.test_control)
-        packages = [u'centrum-python-metapackage-aaa', u'centrum-python-metapackage-bbb', 'centrum-python-metapackage-aaa-static-files']
-
-        assert_equals(packages, [p.name for p in parser.get_packages()])
-
-    def test_upgrade_to_multicipher_version_passes_downgrade_check(self):
-        parser = ControlParser(self.test_control)
-        assert_true(parser.check_downgrade('0.5.0.0', '0.17.0.114'))
 
 
-class TestDependency(DependencyTestCase):
-        
-    def test_dependency_string_without_version(self):
-        assert_equals('centrum-mypage', Dependency(name='centrum-mypage').get_dependency_string())
-
-    def test_dependency_string_with_version(self):
-        assert_equals('centrum-mypage (= 0.5.0.0)', Dependency(name='centrum-mypage', version='0.5.0.0').get_dependency_string())
-
-    def test_dependency_merge_version(self):
-        expected_dependencies = [
-                Dependency("mypage", "0.6.1"),
-                Dependency(name="python"),
-                Dependency("mypage-config", "0.6.1"),
-            ]
-        current_dependencies = [
-            Dependency(name="mypage", version="0.5.0"),
-            Dependency(name="python"),
-            Dependency("mypage-config", "0.6.1"),
-        ]
-        new_dependencies = [
-            Dependency(name="mypage", version="0.6.1"),
-            Dependency(name="python", version="2.6.2"),
-            Dependency(name="iwhatever", version="0.5.0")
-        ]
-        self.assert_dependencies_equals(expected_dependencies, ControlParser(u"").get_dependency_merge(
-            current_dependencies = current_dependencies,
-            new_dependencies = new_dependencies,
-        ))
-
-    def test_dependency_merge_version_nonequals_not_merged(self):
-        expected_dependencies = [
-                Dependency("mypage", "0.5.0"),
-            ]
-        current_dependencies = [
-            Dependency(name="mypage", version="0.5.0", sign=">="),
-        ]
-        new_dependencies = [
-            Dependency(name="mypage", version="0.6.1"),
-        ]
-        self.assert_dependencies_equals(expected_dependencies, ControlParser(u"").get_dependency_merge(
-            current_dependencies = current_dependencies,
-            new_dependencies = new_dependencies,
-        ))
-
-    def test_dependency_merge_version_downgrade_not_allowed(self):
-        assert_raises(ValueError, ControlParser(u"").get_dependency_merge,
-            current_dependencies = [Dependency(name="mypage", version="0.5.0")],
-            new_dependencies = [Dependency(name="mypage", version="0.4.9.9")],
-        )
-
-    def test_dependency_merge_version_downgrade_not_allowed_with_first_version_longer_than_second(self):
-        assert_raises(ValueError, ControlParser(u"").get_dependency_merge,
-            current_dependencies = [Dependency(name="mypage", version="0.4.9.9.9")],
-            new_dependencies = [Dependency(name="mypage", version="0.4.9.9")],
-        )
-
-    def test_dependency_merge_version_downgrade_allowed_with_first_version_longer_but_lower_than_second(self):
-        self.assert_dependencies_equals([Dependency(name="mypage", version="0.4.9")], ControlParser(u"").get_dependency_merge(
-            current_dependencies = [Dependency(name="mypage", version="0.3.9.8")],
-            new_dependencies = [Dependency(name="mypage", version="0.4.9")],
-        ))
-
-    def test_dependency_merge_multiple_version_in_new_deps_raises_value_error(self):
-        assert_raises(ValueError, ControlParser(u"").get_dependency_merge,
-            current_dependencies = [Dependency(name="mypage", version="0.5.0")],
-            new_dependencies = [Dependency(name="mypage", version="0.4.9.9"), Dependency(name="mypage", version="0.5.0")],
-        )
-
-    def test_dependency_merge_versioned_and_nonversioned_allowed(self):
-        expected_dependencies = [
-            Dependency(name="static", version="1.0.0"),
-            VersionedDependency(name="static"),
-        ]
-        current_dependencies = [
-            Dependency(name="static", version="0.5.0"),
-            VersionedDependency(name="static"),
-        ]
-        new_dependencies = [
-            VersionedDependency(name="static", version="1.0.0"),
-        ]
-        self.assert_dependencies_equals(expected_dependencies, ControlParser(u"").get_dependency_merge(
-            current_dependencies = current_dependencies,
-            new_dependencies = new_dependencies,
-        ))
 
 class TestUpdateDependencyVersions(object):
     def setUp(self):
@@ -344,8 +166,7 @@ class TestUpdateDependencyVersions(object):
             'package2_version': '0.2.1',
             'metapackage_version': '0.13.4',
         }
-
-        assert_equals(expected_control_output, open(self.test_control).read())
+        assert_equals(expected_control_output.strip(), open(self.test_control).read().strip())
 
 
     def tearDown(self):
@@ -372,7 +193,7 @@ Description: package with static files without version in path
 
 Package: package-with-static-files-%(version)s
 Architecture: all
-Depends:
+Depends: 
 Description: package with static files with versioned path
 '''
 
@@ -437,7 +258,12 @@ Description: package with static files with versioned path
         original_version = '0.0.0.0'
 
         control_path = join(self.directory, 'debian', 'control')
-        replace_versioned_debian_files(debian_path=join(self.directory, 'debian'), original_version=original_version, new_version=version)
+        replace_versioned_debian_files(
+                debian_path=join(self.directory, 'debian'),
+                original_version=original_version,
+                new_version=version,
+                control_file=ControlFile(filename=control_path)
+            )
         replace_versioned_packages(control_path=control_path, version=version)
 
 
@@ -445,7 +271,7 @@ Description: package with static files with versioned path
         expected_structure = sorted((
             (join('.'), None),
             (join('.', 'debian'), None),
-            (join('.', 'debian', 'control'), self.debian_control % {'version': version,}),
+            (join('.', 'debian', 'control'), self.debian_control.strip() % {'version': version,}),
             (join('.', 'debian', 'package-with-static-files.dirs'), self.debian_package_dirs),
             (join('.', 'debian', 'package-with-static-files.install'), self.debian_package_install),
             (join('.', 'debian', 'package-with-static-files-1.2.3.dirs'), self.debian_package_version_dirs % {'version': version,}),
