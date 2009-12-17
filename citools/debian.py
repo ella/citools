@@ -240,7 +240,7 @@ class ControlParser(object):
             if current_dep.version:
                 candidates = [i for i in new_dependencies if i.name == current_dep.name and i.version]
                 if len(candidates) > 1:
-                    raise ValueError(u"More then one dependency with same name")
+                    raise ValueError(u"More then one dependency with same name: %s" % [ i.name for i in candidates ])
                 if len(candidates) == 1 and candidates[0].version:
                         if current_dep.version:
                             self.check_downgrade(current_dep.version, candidates[0].version)
