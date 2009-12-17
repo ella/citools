@@ -130,7 +130,7 @@ def update_dependency_versions(repositories, control_path, workdir=None):
     # if versioned packages present, replace'em
     if current_meta_version:
         replace_versioned_debian_files(debian_path=dirname(control_path), original_version=current_meta_version, new_version=meta_version_string, control_file=cfile)
-        cfile.replace_versioned_packages(version)
+        cfile.replace_versioned_packages(meta_version_string)
 
     cfile.dump(control_path)
 
