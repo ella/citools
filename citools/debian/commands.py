@@ -1,3 +1,4 @@
+from __future__ import with_statement
 import os
 from shutil import copytree
 from os.path import dirname, exists, join
@@ -15,7 +16,7 @@ from citools.git import fetch_repository
 __all__ = (
     "BuildDebianPackage", "UpdateDebianVersion",
     "CreateDebianPackage", "CreateDebianMetaPackage",
-    "CreateDebianization",
+    "CreateDebianization", "UpdateDependencyVersions",
 )
 
 
