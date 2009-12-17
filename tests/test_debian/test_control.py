@@ -1,7 +1,7 @@
 from nose.tools import assert_equals, assert_raises, assert_true
 
 from citools.debian.control import ControlFileParagraph, SourceParagraph, \
-    Dependency, ControlFile, PackageParagraph
+    Dependency, ControlFile, PackageParagraph, get_dependency
 
 # {{{  Test ControlFileParagraph generic parsing
 ##############################################################################
@@ -149,6 +149,27 @@ def test_dependency_with_sign_is_not_versioned():
 def test_dependency_without_sign_is_versioned():
     d = Dependency('ella', '1.0')
     assert_equals(True, d.is_versioned())
+
+##############################################################################
+# }}}
+
+
+# {{{  Test get_dependency
+
+##############################################################################
+
+def test_get_dependency_identifies_versioned_package():
+    d = get_dependency('centrum-python-img-0.0.0.1')
+    assert_equals(True, d.is_versioned())
+    assert_equals('centrum-python-img', d.name)
+    assert_equals('0.0.0.1', d.version)
+    assert_equals('centrum-python-img-0.0.0.1', str(d))
+
+def test_get_dependency_doesnt_treat_apache2_as_versioned_package():
+    d = get_dependency('python-apache2')
+    assert_equals(False, d.is_versioned())
+    assert_equals('python-apache2', d.name)
+    assert_equals('python-apache2', str(d))
 
 ##############################################################################
 # }}}
