@@ -46,6 +46,11 @@ def test_basic_sanity():
     par = ControlFileParagraph(source)
     assert_equals(source, par.dump())
 
+def test_comments_are_ignored():
+    source = '# some \n# comments\nkey1: value1'
+    par = ControlFileParagraph(source)
+    assert_equals('value1', par['key1'])
+
 ##############################################################################
 # }}}
 
