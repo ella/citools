@@ -82,7 +82,7 @@ class Dependency(object):
         return '<Dependency(%r, %r, %r)>' % (self.name, self.version, self.sign)
 
     def is_versioned(self):
-        return self.version and not self.sign
+        return bool(self.version and not self.sign)
 
 def get_dependency(name, sign='', version=''):
     if version and not sign:
@@ -91,8 +91,10 @@ def get_dependency(name, sign='', version=''):
     if not version:
         package_name = name.rstrip(nums + '.-')
         if package_name != name:
-            version = name[len(package_name):].strip('-')
-            name = package_name
+            version_candidate = name[len(package_name):]
+            if version_candidate[0] == '-':
+                version = version_candidate[1:]
+                name = package_name
     return Dependency(name, version, sign)
 
 class SourceParagraph(ControlFileParagraph):
