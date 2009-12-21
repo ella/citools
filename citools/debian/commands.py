@@ -268,7 +268,7 @@ def parse_setuppy_dependency(package):
 
 def create_debianization(name, version, description, maintainer, install_requires):
     if exists('debian'):
-        raise XXX
+        raise NotImplementedError()
 
     # default values
     name = 'python-' + name.replace('_', '-')

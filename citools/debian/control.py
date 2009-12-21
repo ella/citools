@@ -1,7 +1,7 @@
 from operator import or_
 from pyparsing import (
         ParserElement, LineEnd, CharsNotIn, Group, Word,
-        alphanums, Literal, Combine, ZeroOrMore, Dict, nums,
+        alphanums, Literal, Combine, ZeroOrMore, nums,
         Optional, delimitedList, restOfLine
     )
 from itertools import chain
@@ -149,7 +149,7 @@ Depends: python (>= 2.5.0)
 
         if not paragraphs:
             # FIXME - add some exception
-            raise xxx
+            raise NotImplementedError()
         self.source = SourceParagraph(paragraphs[0])
         self.packages = []
         for s in paragraphs[1:]:

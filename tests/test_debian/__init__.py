@@ -4,7 +4,7 @@ from shutil import rmtree
 from subprocess import check_call, PIPE
 from tempfile import mkdtemp
 
-from nose.tools import assert_equals, assert_raises, assert_true
+from nose.tools import assert_equals
 
 from citools.debian.commands import (
     update_dependency_versions,
