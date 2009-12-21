@@ -257,5 +257,4 @@ class TestHistoryMetadataRetrieval(GitTestCase):
         proc.wait()
         self.assertEquals(0, proc.returncode)
 
-        
         self.assertEquals(self.repo, self._get_metadata_for_revision_4()['repository_uri'])

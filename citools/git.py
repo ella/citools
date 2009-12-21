@@ -66,6 +66,8 @@ def get_last_revision(collection, repository=None):
     if not repository:
         repository = get_repository_uri()
 
+    assert repository
+
     from pymongo import DESCENDING
     result = collection.find({"repository_uri" : repository}).sort([("$natural", DESCENDING),]).limit(1)
     if result.count() == 0:
