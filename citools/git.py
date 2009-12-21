@@ -62,7 +62,10 @@ def fetch_repository(repository, workdir=None, branch=None, cache_config_dir=Non
 
 
 
-def get_last_revision(collection, repository):
+def get_last_revision(collection, repository=None):
+    if not repository:
+        repository = get_repository_uri()
+
     from pymongo import DESCENDING
     result = collection.find({"repository_uri" : repository}).sort([("$natural", DESCENDING),]).limit(1)
     if result.count() == 0:
