@@ -106,7 +106,7 @@ def get_repository_uri():
     stdout, stderr = proc.communicate()
     return stdout.strip()
 
-def get_revision_metadata(changeset, metadata_property_map=None):
+def get_revision_metadata(changeset, metadata_property_map=None, repository_uri=None):
     """
     Return dictionary of metadatas defined in metadata_property_map.
 
@@ -114,7 +114,7 @@ def get_revision_metadata(changeset, metadata_property_map=None):
     """
 
     metadata = {
-        "repository_uri" : get_repository_uri()
+        "repository_uri" : repository_uri or get_repository_uri()
     }
 
     metadata_property_map = metadata_property_map or {
@@ -143,7 +143,7 @@ def get_revision_metadata(changeset, metadata_property_map=None):
     return metadata
 
 
-def retrieve_repository_metadata(changeset):
+def retrieve_repository_metadata(changeset, repository_uri=None):
     """
     Return list of dictionaris with metadata about changesets since revision to current
     """
@@ -160,7 +160,7 @@ def retrieve_repository_metadata(changeset):
     hashes = stdout.splitlines()
     hashes.reverse()
     for hash in hashes:
-        metadata.append(get_revision_metadata(hash))
+        metadata.append(get_revision_metadata(hash, repository_uri))
 
     return metadata
 
@@ -189,6 +189,7 @@ class SaveRepositoryInformationGit(Command):
         ("mongodb-password=", None, "mongo connection password"),
         ("mongodb-database=", None, "mongo database name"),
         ("mongodb-collection=", None, "mongo collection to store data to"),
+        ("repository-uri=", None, "repository URL for identification"),
     ]
 
     def initialize_options(self):
@@ -198,12 +199,14 @@ class SaveRepositoryInformationGit(Command):
         self.mongodb_password = None
         self.mongodb_database = None
         self.mongodb_collection = None
+        self.repository_uri = None
 
     def finalize_options(self):
         self.mongodb_host = self.mongodb_host or "localhost"
         self.mongodb_port = self.mongodb_port or 27017
         self.mongodb_username = self.mongodb_username or None
         self.mongodb_password = self.mongodb_password or None
+        self.repository_uri = self.repository_uri or None
 
         if not self.mongodb_database:
             raise DistutilsOptionError("Mongodb database not given")
