@@ -62,9 +62,9 @@ def fetch_repository(repository, workdir=None, branch=None, cache_config_dir=Non
 
 
 
-def get_last_revision(collection):
+def get_last_revision(collection, repository):
     from pymongo import DESCENDING
-    result = collection.find().sort([("$natural", DESCENDING),]).limit(1)
+    result = collection.find({"repository_uri" : repository}).sort([("$natural", DESCENDING),]).limit(1)
     if result.count() == 0:
         return None
     else:
@@ -95,6 +95,12 @@ def filter_parse_date(stdout):
         return datetime.strptime(stdout[:-6], "%a %b %d %H:%M:%S %Y")
     
 
+def get_repository_uri():
+    cmd = ["git", "config", "remote.origin.url"]
+    proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
+    stdout, stderr = proc.communicate()
+    return stdout.strip()
+
 def get_revision_metadata(changeset, metadata_property_map=None):
     """
     Return dictionary of metadatas defined in metadata_property_map.
@@ -102,7 +108,9 @@ def get_revision_metadata(changeset, metadata_property_map=None):
     Uses slow solution (git log query per property) to avoid "delimiter inside result" problem.
     """
 
-    metadata = {}
+    metadata = {
+        "repository_uri" : get_repository_uri()
+    }
 
     metadata_property_map = metadata_property_map or {
         "%h" : {'name' : "hash_abbrev"},

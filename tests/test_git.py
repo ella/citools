@@ -249,4 +249,13 @@ class TestHistoryMetadataRetrieval(GitTestCase):
     def test_partial_history_contains_another_branch(self):
         self.assertEquals(3, len(retrieve_repository_metadata(str(self.revisions[4]))))
         self.assertEquals([self.revisions[1], self.revisions[2]], [i['hash'] for i in retrieve_repository_metadata(str(self.revisions[4]))[0:2]])
-    
+
+
+    def test_repository_name_is_part_of_metadata(self):
+        # we're assuming origin
+        proc = Popen(['git', 'remote', 'add', 'origin', self.repo], stdout=PIPE, stdin=PIPE)
+        proc.wait()
+        self.assertEquals(0, proc.returncode)
+
+        
+        self.assertEquals(self.repo, self._get_metadata_for_revision_4()['repository_uri'])
