@@ -62,14 +62,14 @@ def fetch_repository(repository, workdir=None, branch=None, cache_config_dir=Non
 
 
 
-def get_last_revision(collection, repository=None):
-    if not repository:
-        repository = get_repository_uri()
+def get_last_revision(collection, repository_uri=None):
+    if not repository_uri:
+        repository_uri = get_repository_uri()
 
-    assert repository
+    assert repository_uri
 
     from pymongo import DESCENDING
-    result = collection.find({"repository_uri" : repository}).sort([("$natural", DESCENDING),]).limit(1)
+    result = collection.find({"repository_uri" : repository_uri}).sort([("$natural", DESCENDING),]).limit(1)
     if result.count() == 0:
         return None
     else:
@@ -160,7 +160,7 @@ def retrieve_repository_metadata(changeset, repository_uri=None):
     hashes = stdout.splitlines()
     hashes.reverse()
     for hash in hashes:
-        metadata.append(get_revision_metadata(hash, repository_uri))
+        metadata.append(get_revision_metadata(hash, repository_uri=repository_uri))
 
     return metadata
 
@@ -225,7 +225,7 @@ class SaveRepositoryInformationGit(Command):
             password=self.mongodb_password
         )[self.mongodb_collection]
         
-        changeset = get_last_revision(collection)
-        data = retrieve_repository_metadata(changeset)
+        changeset = get_last_revision(collection, repository_uri=self.repository_uri)
+        data = retrieve_repository_metadata(changeset, repository_uri=self.repository_uri)
         store_repository_metadata(collection, data)
 
