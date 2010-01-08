@@ -5,6 +5,7 @@ from os.path import dirname, exists, join
 from popen2 import Popen3
 import re
 from subprocess import check_call
+from datetime import datetime
 
 from distutils.core import Command
 
@@ -289,7 +290,9 @@ def create_debianization(name, version, description, maintainer, install_require
             for key, value in (
                 ('#NAME#', name),
                 ('#MAINTAINER#', maintainer),
-                ('#VERSION#', version)):
+                ('#VERSION#', version),
+                ('#DATE#', datetime.now().strftime('%a, %d %b %Y %H:%M:%S')),
+                ):
                 content = content.replace(key, value)
 
             with open(file, 'w') as fout:
