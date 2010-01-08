@@ -310,7 +310,7 @@ def create_debianization(name, version, description, maintainer, install_require
 
 
 class CreateDebianization(Command):
-    description = ""
+    description = "Create default debian directory containg everything needed to build a debian package."
 
     user_options = [
     ]
