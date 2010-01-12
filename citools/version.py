@@ -142,6 +142,8 @@ def get_git_head_hash(fix_environment=False, repository_directory=None):
 def replace_init(version, name):
     """ Update VERSION attribute in $name/__init__.py module """
     file = os.path.join(name, '__init__.py')
+    if not os.path.exists(file):
+        file = '%s.py' % name
     replace_version_in_file(version, file)
 
 def replace_version_in_file(version, file):
@@ -192,6 +194,7 @@ class GitSetMetaVersion(config):
         """
         try:
             meta_version = compute_meta_version(self.distribution.dependencies_git_repositories)
+            # TODO: distribution.py_modules and distribution.packages should be used
             replace_init(meta_version, self.distribution.get_name())
             replace_version_in_file(meta_version, 'setup.py')
             version_str = '.'.join(map(str, meta_version))
@@ -223,6 +226,7 @@ class GitSetVersion(config):
         try:
             current_git_version = get_git_describe()
             version = compute_version(current_git_version)
+            # TODO: distribution.py_modules and distribution.packages should be used
             replace_init(version, self.distribution.get_name())
             replace_version_in_file(version, 'setup.py')
             version_str = '.'.join(map(str, version))
