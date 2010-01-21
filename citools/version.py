@@ -142,9 +142,21 @@ def get_git_head_hash(fix_environment=False, repository_directory=None):
 def replace_init(version, name):
     """ Update VERSION attribute in $name/__init__.py module """
     file = os.path.join(name, '__init__.py')
-    if not os.path.exists(file):
-        file = '%s.py' % name
     replace_version_in_file(version, file)
+
+def replace_inits(version, packages=None):
+    if packages is None:
+        packages = []
+    for p in packages:
+        p = p.replace('.', '/')
+        replace_init(version, p)
+
+def replace_scripts(version, scripts=None):
+    if scripts is None:
+        scripts = []
+    for s in scripts:
+        s = '%s.py' % s
+        replace_version_in_file(version, s)
 
 def replace_version_in_file(version, file):
     """ Update VERSION attribute in $name/__init__.py module """
@@ -194,13 +206,17 @@ class GitSetMetaVersion(config):
         """
         try:
             meta_version = compute_meta_version(self.distribution.dependencies_git_repositories)
-            # TODO: distribution.py_modules and distribution.packages should be used
-            replace_init(meta_version, self.distribution.get_name())
-            replace_version_in_file(meta_version, 'setup.py')
-            version_str = '.'.join(map(str, meta_version))
+
+            version = meta_version
+            version_str = '.'.join(map(str, version))
+
+            replace_inits(version, self.distribution.packages)
+            replace_scripts(version, self.distribution.py_modules)
+
+            replace_version_in_file(version, 'setup.py')
+
             self.distribution.metadata.version = version_str
-            
-            print "Current version is %s" % '.'.join(map(str, meta_version))
+            print "Current version is %s" % version_str
         except Exception:
             import traceback
             traceback.print_exc()
@@ -225,11 +241,15 @@ class GitSetVersion(config):
         Because of line endings, should be not run on Windows."""
         try:
             current_git_version = get_git_describe()
+
             version = compute_version(current_git_version)
-            # TODO: distribution.py_modules and distribution.packages should be used
-            replace_init(version, self.distribution.get_name())
-            replace_version_in_file(version, 'setup.py')
             version_str = '.'.join(map(str, version))
+
+            replace_inits(version, self.distribution.packages)
+            replace_scripts(version, self.distribution.py_modules)
+
+            replace_version_in_file(version, 'setup.py')
+
             self.distribution.metadata.version = version_str
             print "Current version is %s" % version_str
         except Exception:
