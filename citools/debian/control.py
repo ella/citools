@@ -180,16 +180,18 @@ Depends: python (>= 2.5.0)
 
         for i in xrange(0, len(curr_tuple)):
             if len(new_tuple) < (i+1):
-                raise ValueError("Attempt to downgrade %s to %s" % (
+                raise ValueError("Attempt to downgrade %s to %s (%s)" % (
                     current_version,
                     new_version,
+                    self._pname,
                 ))
             elif new_tuple[i] > curr_tuple[i]:
                 return True
             elif (new_tuple[i] < curr_tuple[i]):
-                raise ValueError("Attempt to downgrade %s to %s" % (
+                raise ValueError("Attempt to downgrade %s to %s (%s)" % (
                     current_version,
                     new_version,
+                    self._pname,
                 ))
         return True
 
@@ -197,6 +199,7 @@ Depends: python (>= 2.5.0)
         new_versions = dict((p.name, p.version) for p in deps_from_repositories)
         for p in self.get_dependencies():
             if p.name in new_versions:
+                self._pname = p.name
                 new_version = new_versions[p.name]
                 self.check_downgrade(p.version, new_version)
                 p.version = new_version
