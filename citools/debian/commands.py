@@ -272,7 +272,7 @@ def create_debianization(name, version, description, maintainer, install_require
         raise NotImplementedError()
 
     # default values
-    name = 'python-' + name.replace('_', '-')
+    name = 'python-' + name.replace('_', '-').lower()
     if maintainer == 'UNKNOWN':
         maintainer = 'CH content team <pg-content-dev@chconf.com>'
 
