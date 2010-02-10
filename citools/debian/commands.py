@@ -267,14 +267,18 @@ def parse_setuppy_dependency(package):
     return Dependency(package)
 
 
-def create_debianization(name, version, description, maintainer, install_requires):
+def create_debianization(name, version, description, maintainer, maintainer_email, install_requires):
     if exists('debian'):
         raise NotImplementedError()
 
     # default values
-    name = 'python-' + name.replace('_', '-').lower()
+    name = 'python-%s' % name.replace('_', '-').lower()
     if maintainer == 'UNKNOWN':
-        maintainer = 'CH content team <pg-content-dev@chconf.com>'
+        maintainer = 'CH content team'
+    if maintainer_email == 'UNKNOWN':
+        maintainer_email = 'pg-content-dev@chconf.com'
+
+    maintainer = '%s <%s>' % (maintainer, maintainer_email)
 
     if not version:
         version = '0.0.0'
@@ -330,6 +334,7 @@ class CreateDebianization(Command):
             self.distribution.get_name(),
             self.distribution.get_version(),
             self.distribution.get_description(),
+            self.distribution.get_maintainer(),
             self.distribution.get_maintainer_email(),
             self.distribution.install_requires,
         )
