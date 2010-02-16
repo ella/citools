@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from ConfigParser import SafeConfigParser
 from unittest import TestCase
 
@@ -36,7 +37,7 @@ class GitTestCase(TestCase):
 
     def commit(self, message='dummy'):
         """ Commmit into repository and return commited revision """
-        self.do_piped_command_for_success(['git', 'commit', '-a', '-m', '"%s"' % message])
+        self.do_piped_command_for_success(['git', 'commit', '-a', '-m', '%s' % message])
         stdout = self.do_piped_command_for_success(['git', 'rev-parse', 'HEAD'])[0]
         return stdout.strip()
 
@@ -241,7 +242,7 @@ class TestHistoryMetadataRetrieval(GitTestCase):
         self.assertTrue(isinstance(self._get_metadata_for_revision_4()['commiter_date'], datetime))
 
     def test_simple_diff_contains_subject(self):
-        self.assertEquals('"4"', self._get_metadata_for_revision_4()['subject'])
+        self.assertEquals('4', self._get_metadata_for_revision_4()['subject'])
 
     def test_whole_history_contains_all_branches(self):
         self.assertEquals(len(self.revisions), len(retrieve_repository_metadata(str(self.revisions[0]))))
@@ -258,3 +259,12 @@ class TestHistoryMetadataRetrieval(GitTestCase):
         self.assertEquals(0, proc.returncode)
 
         self.assertEquals(self.repo, self._get_metadata_for_revision_4()['repository_uri'])
+
+    def test_unicode_commit_messages_supported(self):
+        f = open(os.path.join(self.repo, 'test2.txt'), 'wb')
+        f.write("changed AGAIN")
+        f.close()
+
+        self.revisions.append(self.commit(message=u"你好, řeřicha".encode('utf-8')))
+
+        self.assertEquals(u"你好, řeřicha", retrieve_repository_metadata(str(self.revisions[len(self.revisions)-1])+"^")[0]['subject'])

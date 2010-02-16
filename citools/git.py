@@ -75,8 +75,8 @@ def get_last_revision(collection, repository_uri=None):
     else:
         return list(result)[0]['hash']
 
-def get_revision_metadata_property(changeset, property, filter=None):
-    default_filter = lambda x: x
+def get_revision_metadata_property(changeset, property, filter=None, encoding="utf-8"):
+    default_filter = lambda x: x.decode(encoding)
     filter = filter or default_filter
 
     cmd = ["git", "show", "--quiet", '--date=local', '--pretty=format:%s' % property, changeset]
@@ -106,7 +106,7 @@ def get_repository_uri():
     stdout, stderr = proc.communicate()
     return stdout.strip()
 
-def get_revision_metadata(changeset, metadata_property_map=None, repository_uri=None):
+def get_revision_metadata(changeset, metadata_property_map=None, repository_uri=None, encoding="utf-8"):
     """
     Return dictionary of metadatas defined in metadata_property_map.
 
@@ -143,7 +143,7 @@ def get_revision_metadata(changeset, metadata_property_map=None, repository_uri=
     return metadata
 
 
-def retrieve_repository_metadata(changeset, repository_uri=None):
+def retrieve_repository_metadata(changeset, repository_uri=None, encoding="utf-8"):
     """
     Return list of dictionaris with metadata about changesets since revision to current
     """
@@ -152,6 +152,7 @@ def retrieve_repository_metadata(changeset, repository_uri=None):
         command.append("%s.." % changeset)
     proc = Popen(command, stdout=PIPE, stderr=PIPE)
     stdout, stderr = proc.communicate()
+
     if not proc.returncode == 0:
         log.error("Cannot retrieve log: stdout: %s stderr: %s" % (stdout, stderr))
         raise CalledProcessError(proc.returncode, command)
@@ -160,7 +161,7 @@ def retrieve_repository_metadata(changeset, repository_uri=None):
     hashes = stdout.splitlines()
     hashes.reverse()
     for hash in hashes:
-        metadata.append(get_revision_metadata(hash, repository_uri=repository_uri))
+        metadata.append(get_revision_metadata(hash, repository_uri=repository_uri, encoding=encoding))
 
     return metadata
 
