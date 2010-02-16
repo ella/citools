@@ -40,7 +40,7 @@ class BuildDebianPackage(Command):
         pass
 
     def run(self):
-        check_call(['dpkg-buildpackage', '-rfakeroot', '-us', '-uc'])
+        check_call(['dpkg-buildpackage', '-rfakeroot-tcp', '-us', '-uc'])
 
 
 def get_new_dependencies(dir):
