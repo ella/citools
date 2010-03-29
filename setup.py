@@ -73,6 +73,7 @@ setup(
     install_requires = [
         'setuptools>=0.6b1',
         'argparse>=0.9.0',
+        'pyparsing',
     ],
 )
 
