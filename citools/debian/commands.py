@@ -283,7 +283,7 @@ def create_debianization(name, version, description, maintainer, maintainer_emai
     if not version:
         version = '0.0.0'
 
-
+    # replace all occurences in debian template dir
     copytree(join(dirname(__file__), 'default_debianization'), 'debian')
     for root, dirs, files in os.walk('debian'):
         for f in files:
@@ -295,19 +295,21 @@ def create_debianization(name, version, description, maintainer, maintainer_emai
                 ('#NAME#', name),
                 ('#MAINTAINER#', maintainer),
                 ('#VERSION#', version),
-                ('#DATE#', datetime.now().strftime('%a, %d %b %Y %H:%M:%S')),
+		('#DATE#', datetime.now().strftime('%a, %d %b %Y %H:%M:%S %z')), # TODO: howto use tzinfo (make %z functional)?
                 ):
                 content = content.replace(key, value)
 
             with open(file, 'w') as fout:
                 fout.write(content)
 
+    # update control file
     cf = ControlFile(filename='debian/control')
     src = cf.source
     p = cf.packages[0]
     src['Source'] = p['Package'] = name
     src['Maintainer'] = maintainer
     p['Description'] = description.strip().replace('\n', '\n ')
+    p['Architecture'] = 'all' # TODO: should be 'any' if any 'extension' in setup.py is defined
 
     if install_requires:
         for package in install_requires:
