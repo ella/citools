@@ -295,7 +295,7 @@ def create_debianization(name, version, description, maintainer, maintainer_emai
                 ('#NAME#', name),
                 ('#MAINTAINER#', maintainer),
                 ('#VERSION#', version),
-		('#DATE#', datetime.now().strftime('%a, %d %b %Y %H:%M:%S %z')), # TODO: howto use tzinfo (make %z functional)?
+                ('#DATE#', datetime.now().strftime('%a, %d %b %Y %H:%M:%S %z')), # TODO: howto use tzinfo (make %z functional)?
                 ):
                 content = content.replace(key, value)
 
