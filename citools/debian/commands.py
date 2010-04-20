@@ -277,19 +277,23 @@ def get_tzdiff(local, remote):
     minute = delta_minute%60
     return '%s%02d%02d' % (sign, hour, minute)
 
-def create_debianization(name, version, description, maintainer, maintainer_email, install_requires):
+def create_debianization(distribution):
     if exists('debian'):
         raise NotImplementedError()
 
     # default values
+    name = distribution.get_name()
     name = 'python-%s' % name.replace('_', '-').lower()
 
+    maintainer = distribution.get_maintainer()
+    maintainer_email = distribution.get_maintainer_email()
     if maintainer == 'UNKNOWN':
         maintainer = 'CH content team'
     if maintainer_email == 'UNKNOWN':
         maintainer_email = 'pg-content-dev@chconf.com'
     maintainer = '%s <%s>' % (maintainer, maintainer_email)
 
+    version = distribution.get_version()
     if not version:
         version = '0.0.0'
 
@@ -299,9 +303,12 @@ def create_debianization(name, version, description, maintainer, maintainer_emai
     tzdiff = get_tzdiff(now, utcnow)
     nowstring = '%s %s' % (now.strftime('%a, %d %b %Y %H:%M:%S'), tzdiff)
 
+    description = distribution.get_description()
     description = description.strip().replace('\n', '\n ')
 
-    architecture = 'all' # TODO: should be 'any' if any 'extension' in setup.py is defined
+    architecture = 'all'
+    if distribution.has_ext_modules():
+        architecture = 'any'
 
     # replace all occurences in debian template dir
     copytree(join(dirname(__file__), 'default_debianization'), 'debian')
@@ -333,6 +340,7 @@ def create_debianization(name, version, description, maintainer, maintainer_emai
     p['Description'] = description
     p['Architecture'] = architecture
 
+    install_requires = distribution.install_requires
     if install_requires:
         for package in install_requires:
             p['Depends'].append(parse_setuppy_dependency(package))
@@ -354,11 +362,5 @@ class CreateDebianization(Command):
 
     def run(self):
         # TODO: build dependencies
-        create_debianization(
-            self.distribution.get_name(),
-            self.distribution.get_version(),
-            self.distribution.get_description(),
-            self.distribution.get_maintainer(),
-            self.distribution.get_maintainer_email(),
-            self.distribution.install_requires,
-        )
+        create_debianization(self.distribution)
+
