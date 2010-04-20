@@ -1,7 +1,10 @@
 from nose.tools import assert_equals, assert_raises, assert_true
 
-from citools.debian.control import ControlFileParagraph, SourceParagraph, \
-    Dependency, ControlFile, PackageParagraph, get_dependency
+from citools.debian.control import (
+    ControlFileParagraph, SourceParagraph,
+    Dependency, ControlFile, PackageParagraph,
+    get_dependency,
+)
 
 # {{{  Test ControlFileParagraph generic parsing
 ##############################################################################

@@ -266,6 +266,16 @@ def parse_setuppy_dependency(package):
         return Dependency(name, version, sign)
     return Dependency(package)
 
+def get_tzdiff(local, remote):
+    '''
+    little hack because of pretty bad time difference management in python
+    TODO: can this solve datetime module itself?
+    '''
+    delta_minute = (local.hour - remote.hour) * 60 + (local.minute - remote.minute)
+    sign = delta_minute < 0 and '-' or '+'
+    hour = abs(delta_minute/60)
+    minute = delta_minute%60
+    return '%s%02d%02d' % (sign, hour, minute)
 
 def create_debianization(name, version, description, maintainer, maintainer_email, install_requires):
     if exists('debian'):
@@ -273,18 +283,29 @@ def create_debianization(name, version, description, maintainer, maintainer_emai
 
     # default values
     name = 'python-%s' % name.replace('_', '-').lower()
+
     if maintainer == 'UNKNOWN':
         maintainer = 'CH content team'
     if maintainer_email == 'UNKNOWN':
         maintainer_email = 'pg-content-dev@chconf.com'
-
     maintainer = '%s <%s>' % (maintainer, maintainer_email)
 
     if not version:
         version = '0.0.0'
 
+    # get current date in proper format
+    now = datetime.now()
+    utcnow = datetime.utcnow()
+    tzdiff = get_tzdiff(now, utcnow)
+    nowstring = '%s %s' % (now.strftime('%a, %d %b %Y %H:%M:%S'), tzdiff)
+
+    description = description.strip().replace('\n', '\n ')
+
+    architecture = 'all' # TODO: should be 'any' if any 'extension' in setup.py is defined
+
     # replace all occurences in debian template dir
     copytree(join(dirname(__file__), 'default_debianization'), 'debian')
+    # do the replacement in template dir
     for root, dirs, files in os.walk('debian'):
         for f in files:
             file = join(root, f)
@@ -295,7 +316,7 @@ def create_debianization(name, version, description, maintainer, maintainer_emai
                 ('#NAME#', name),
                 ('#MAINTAINER#', maintainer),
                 ('#VERSION#', version),
-                ('#DATE#', datetime.now().strftime('%a, %d %b %Y %H:%M:%S %z')), # TODO: howto use tzinfo (make %z functional)?
+                ('#DATE#', nowstring),
                 ):
                 content = content.replace(key, value)
 
@@ -306,10 +327,11 @@ def create_debianization(name, version, description, maintainer, maintainer_emai
     cf = ControlFile(filename='debian/control')
     src = cf.source
     p = cf.packages[0]
+
     src['Source'] = p['Package'] = name
     src['Maintainer'] = maintainer
-    p['Description'] = description.strip().replace('\n', '\n ')
-    p['Architecture'] = 'all' # TODO: should be 'any' if any 'extension' in setup.py is defined
+    p['Description'] = description
+    p['Architecture'] = architecture
 
     if install_requires:
         for package in install_requires:

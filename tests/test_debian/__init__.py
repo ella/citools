@@ -3,6 +3,7 @@ from os.path import join
 from shutil import rmtree
 from subprocess import check_call, PIPE
 from tempfile import mkdtemp
+from datetime import datetime
 
 from nose.tools import assert_equals
 
@@ -10,6 +11,7 @@ from citools.debian.commands import (
     update_dependency_versions,
     replace_versioned_packages,
     replace_versioned_debian_files,
+    get_tzdiff,
 )
 from citools.debian.control import ControlFile
 
@@ -294,4 +296,9 @@ Description: package with static files with versioned path
     def tearDown(self):
         os.chdir(self.oldcwd)
         rmtree(self.directory)
+
+def test_utc_time_differrence():
+    l = datetime(2010, 1, 1, 14, 22)
+    r = datetime(2010, 1, 1, 12, 22)
+    assert_equals('+0200', get_tzdiff(l, r))
 
