@@ -1,3 +1,5 @@
+from paver.easy import *
+
 @task
 @consume_args
 @needs('unit', 'integrate')
