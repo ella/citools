@@ -34,7 +34,6 @@ def unit(args):
     """ Run unittests """
     run_tests(test_project_module="unit_project", nose_args=[]+args)
 
-
 @task
 @consume_args
 def integrate(args):
@@ -62,6 +61,6 @@ def bootstrap():
     print '*'*80
 
 @task
-@needs('install_dependencies')
+@needs('citools.paver.install_dependencies')
 def prepare():
     """ Prepare complete environment """
