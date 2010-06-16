@@ -1,3 +1,8 @@
+import os
+import sys
+from os.path import join, abspath, dirname
+
+
 from paver.easy import *
 
 @task
