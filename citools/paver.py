@@ -42,7 +42,7 @@ def integrate(args):
 
 @task
 def install_dependencies():
-    sh('pip install --upgrade -r requirements.txt')
+    sh('pip install -r requirements.txt')
 
 @task
 def bootstrap():
