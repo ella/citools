@@ -13,9 +13,9 @@ def test():
 
 def djangonize_test_environment(test_project_module):
 
-    sys.path.insert(0, abspath(join(dirname(__file__))))
-    sys.path.insert(0, abspath(join(dirname(__file__), "tests")))
-    sys.path.insert(0, abspath(join(dirname(__file__), "tests", test_project_module)))
+    sys.path.insert(0, options.rootdir)
+    sys.path.insert(0, join(options.rootdir, "tests"))
+    sys.path.insert(0, join(options.rootdir, "tests", test_project_module))
 
     os.environ['DJANGO_SETTINGS_MODULE'] = "%s.settings" % test_project_module
 
@@ -24,7 +24,7 @@ def run_tests(test_project_module, nose_args):
 
     import nose
 
-    os.chdir(abspath(join(dirname(__file__), "tests", test_project_module)))
+    os.chdir(join(options.rootdir, "tests", test_project_module))
 
     argv = ["--with-django"] + nose_args
 
