@@ -1,6 +1,6 @@
 import os
 import sys
-from os.path import join, abspath, dirname
+from os.path import join, exists
 
 
 from paver.easy import *
@@ -15,7 +15,8 @@ def djangonize_test_environment(test_project_module):
 
     sys.path.insert(0, options.rootdir)
     sys.path.insert(0, join(options.rootdir, "tests"))
-    sys.path.insert(0, join(options.rootdir, "tests", test_project_module))
+    if exists(join(options.rootdir, "tests", test_project_module)):
+        sys.path.insert(0, join(options.rootdir, "tests", test_project_module))
 
     os.environ['DJANGO_SETTINGS_MODULE'] = "%s.settings" % test_project_module
 
@@ -37,13 +38,29 @@ def run_tests(test_project_module, nose_args):
 @consume_args
 def unit(args):
     """ Run unittests """
-    run_tests(test_project_module="unit_project", nose_args=[]+args)
+    run_tests(test_project_module="unit_project", nose_args=args)
 
 @task
 @consume_args
 def integrate(args):
     """ Run integration tests """
     run_tests(test_project_module="example_project", nose_args=["--with-selenium", "--with-djangoliveserver"]+args)
+
+@task
+@consume_args
+def integrate_project(args):
+    """ Run integration tests """
+    
+    djangonize_test_environment(options.project_module)
+
+    os.chdir(join(options.rootdir, "tests"))
+
+    import nose
+
+    nose.run_exit(
+        argv = ["nosetests", "--with-django", "--with-selenium", "--with-djangoliveserver"]+args,
+        defaultTest = "tests"
+    )
 
 
 @task
