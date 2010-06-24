@@ -20,7 +20,7 @@ def djangonize_test_environment(test_project_module):
 
     os.environ['DJANGO_SETTINGS_MODULE'] = "%s.settings" % test_project_module
 
-def run_tests(test_project_module, nose_args):
+def run_tests(test_project_module, nose_args, nose_run_kwargs=None):
     djangonize_test_environment(test_project_module)
 
     import nose
@@ -29,22 +29,25 @@ def run_tests(test_project_module, nose_args):
 
     argv = ["--with-django"] + nose_args
 
+    nose_run_kwargs = nose_run_kwargs or {}
+
     nose.run_exit(
         argv = ["nosetests"] + argv,
-        defaultTest = test_project_module
+        defaultTest = test_project_module,
+        **nose_run_kwargs
     )
 
 @task
 @consume_args
-def unit(args):
+def unit(args, nose_run_kwargs=None):
     """ Run unittests """
-    run_tests(test_project_module="unit_project", nose_args=args)
+    run_tests(test_project_module="unit_project", nose_args=args, nose_run_kwargs=nose_run_kwargs)
 
 @task
 @consume_args
-def integrate(args):
+def integrate(args, nose_run_kwargs=None):
     """ Run integration tests """
-    run_tests(test_project_module="example_project", nose_args=["--with-selenium", "--with-djangoliveserver"]+args)
+    run_tests(test_project_module="example_project", nose_args=["--with-selenium", "--with-djangoliveserver"]+args, nose_run_kwargs=nose_run_kwargs)
 
 @task
 @consume_args
