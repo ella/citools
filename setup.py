@@ -51,6 +51,7 @@ setup(
     entry_points = {
         'console_scripts': [
             'citools = citools.main:main',
+            'cthulhubot_force_build = citools.cthulhubot:force_build',
         ],
         'distutils.commands' : [
             'compute_version_git = citools.version:GitSetVersion',
