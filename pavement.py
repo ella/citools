@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import os
 import sys
 from os.path import abspath, dirname
@@ -123,3 +124,4 @@ def bootstrap():
 @needs('install_dependencies')
 def prepare():
     """ Prepare complete environment """
+

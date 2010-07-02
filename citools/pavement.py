@@ -89,3 +89,17 @@ def bootstrap():
 @needs('citools.paver.install_dependencies')
 def prepare():
     """ Prepare complete environment """
+
+@task
+def bump():
+    """ Bump most-minor tagged version. Assumes git. """
+    from citools.version import get_git_describe, compute_version
+    version = compute_version(get_git_describe())
+
+    new_version = list(version[:-1])
+    new_version[len(new_version)-1] += 1
+
+    tag = options.name + "-" + ".".join(map(str, new_version))
+
+    sh('git tag -s %s' % tag)
+
