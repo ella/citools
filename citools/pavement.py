@@ -101,5 +101,5 @@ def bump():
 
     tag = options.name + "-" + ".".join(map(str, new_version))
 
-    sh('git tag -s %s' % tag)
+    sh('git tag -a %s' % tag)
 
