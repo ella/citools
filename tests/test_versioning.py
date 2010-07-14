@@ -172,6 +172,10 @@ class TestMetaRepository(TestCase):
         """
         os.chdir(directory)
         check_call(['git', 'init'], stdout=PIPE, stdin=PIPE)
+        
+        # configure me
+        check_call(['git', 'config', 'user.email', 'testcase@example.com'])
+        check_call(['git', 'config', 'user.name', 'Testing Testorz'])
 
         # create a commit
         f = open(os.path.join(directory, file_name), 'wb')

@@ -122,6 +122,10 @@ class TestUpdateDependencyVersions(object):
 
         check_call(['git', 'init'], stdout=PIPE, stdin=PIPE)
 
+        # configure me
+        check_call(['git', 'config', 'user.email', 'testcase@example.com'])
+        check_call(['git', 'config', 'user.name', 'Testing Testorz'])
+
         # initial commit
         open('.gitignore', 'w').close()
 
