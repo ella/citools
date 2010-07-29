@@ -67,7 +67,7 @@ def sum_versions(version1, version2):
         position += 1
     return tuple(final_version)
 
-def get_git_describe(fix_environment=False, repository_directory=None):
+def get_git_describe(fix_environment=False, repository_directory=None, accepted_tag_pattern=None):
     """ Return output of git describe. If no tag found, initial version is considered to be 0.0.1 """
     if repository_directory and not fix_environment:
         raise ValueError("Both fix_environment and repository_directory or none of them must be given")
@@ -81,9 +81,16 @@ def get_git_describe(fix_environment=False, repository_directory=None):
 
         os.environ['GIT_DIR'] = os.path.join(repository_directory, '.git')
 
+
+    command = ["git", "describe"]
+
+    if accepted_tag_pattern is not None:
+        command.append('--match="%s"' % accepted_tag_pattern)
+
     try:
-        proc = Popen(["git", "describe"], stdout=PIPE, stderr=PIPE)
+        proc = Popen(' '.join(command), stdout=PIPE, stderr=PIPE, shell=True)
         stdout, stderr = proc.communicate()
+        
         if proc.returncode == 0:
             return stdout.strip()
 

@@ -141,6 +141,45 @@ class TestGitVersionRetrieving(TestCase):
 
         self.assertTrue(get_git_describe().startswith('0.1-lol-1'))
 
+
+    def test_pattern_used_to_filter_everything_acting_like_without_tag(self):
+        self.prepare_tagged_repo_with_file(tag='0.1-lol')
+
+        self.assertEquals('0.0', get_git_describe(accepted_tag_pattern='myproject-*'))
+
+
+    def _check_filtering_works(self, tag, retag, search_pattern, expected_result_start):
+        self.prepare_tagged_repo_with_file(tag=tag)
+
+        # create a commit
+        f = open(os.path.join(self.repo, 'test.txt'), 'wb')
+        f.write("test test")
+        f.close()
+
+        check_call(['git', 'add', '*'])
+        check_call(['git', 'commit', '-a', '-m', '"dummy"'], stdout=PIPE)
+        check_call(['git', 'tag', '-m', '"tagging"', '-a', retag])
+
+        describe = get_git_describe(accepted_tag_pattern=search_pattern)
+        self.assertTrue(describe.startswith(expected_result_start), "Retrieved bad describe %s" % describe)
+
+    def test_pattern_used_to_filter_only_matching_tags(self):
+        self._check_filtering_works(tag='release/project-0.1', retag="xxxx",
+            search_pattern='release/project-[0-9]*',
+            expected_result_start='release/project-0.1-1')
+
+    def test_pattern_used_to_separate_bad_suffixes(self):
+        self._check_filtering_works(tag='project-0.1',
+            retag="project-meta-0.1",
+            search_pattern='project-[0-9]*',
+            expected_result_start='project-0.1-1')
+
+    def test_pattern_used_to_separate_bad_prefixes(self):
+        self._check_filtering_works(tag='project-0.1',
+            retag="myproject-0.1",
+            search_pattern='project-[0-9]*',
+            expected_result_start='project-0.1-1')
+
     def tearDown(self):
         TestCase.tearDown(self)
         # delete temporary repository and restore ENV vars after update
@@ -196,7 +235,6 @@ class TestMetaRepository(TestCase):
                 check_call(['git', 'commit', '-a', '-m', '%s commit since' % i], stdout=PIPE, stdin=PIPE)
 
     def test_proper_child_version(self):
-        print get_git_describe(repository_directory=self.repo_one, fix_environment=True)
         self.assertEquals((1, 0, 59, 1), compute_version(get_git_describe(repository_directory=self.repo_one, fix_environment=True)))
 
     def test_proper_second_child_version(self):
