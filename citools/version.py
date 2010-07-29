@@ -2,6 +2,7 @@ from distutils.command.config import config
 import re
 import os
 from popen2 import Popen3
+from subprocess import Popen, PIPE
 from tempfile import mkdtemp
 
 from citools.git import fetch_repository
@@ -81,18 +82,16 @@ def get_git_describe(fix_environment=False, repository_directory=None):
         os.environ['GIT_DIR'] = os.path.join(repository_directory, '.git')
 
     try:
-        proc = Popen3("git describe", capturestderr=True)
-        return_code = proc.wait()
-        if return_code == 0:
-            return proc.fromchild.read().strip()
+        proc = Popen(["git", "describe"], stdout=PIPE, stderr=PIPE)
+        stdout, stderr = proc.communicate()
+        if proc.returncode == 0:
+            return stdout.strip()
 
-        elif return_code == 32768:
-            # git describe failed as there is no tag in repository
-            # strangely, $? returns 128, but is represented like this in Python...
+        elif proc.returncode == 128:
             return '0.0'
 
         else:
-            raise ValueError("Unknown return code %s" % return_code)
+            raise ValueError("Unknown return code %s" % proc.returncode)
 
     finally:
         if fix_environment:
