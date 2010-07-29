@@ -92,9 +92,21 @@ def prepare():
 
 @task
 def bump():
-    """ Bump most-minor tagged version. Assumes git. """
+    """
+    Bump most-minor tagged version. Assumes git.
+    
+    Bump is completed only since last release. This is assumed to have
+    $projectname-[digit]* format. If not, it shall be configured
+    as options.release_tag_format.
+    """
+
+    if getattr(options, "release_tag_format", False):
+        format = release_tag_format
+    else:
+        format = "%s-[0-9]*" % options.name
+
     from citools.version import get_git_describe, compute_version
-    version = compute_version(get_git_describe())
+    version = compute_version(get_git_describe(accepted_tag_pattern=format))
 
     new_version = list(version[:-1])
     new_version[len(new_version)-1] += 1
