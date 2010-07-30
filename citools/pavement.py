@@ -113,5 +113,5 @@ def bump():
 
     tag = options.name + "-" + ".".join(map(str, new_version))
 
-    sh('git tag -a %s' % tag)
+    sh('git tag -a %s -m "paver bump to version %s"' % (tag, tag))
 
