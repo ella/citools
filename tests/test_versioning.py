@@ -264,13 +264,12 @@ class TestMetaRepository(TestCase):
 
 
     def test_computing_meta_version_accepts_branch(self):
-        # 0.1.1 is my version
+        # 0.1.0 is my version (my deps are testomation, but I'm at master!)
         # 1.0.59.2 is first child
         # 2.0.13 is second child
-        # => 3.1.73.2
-        check_call(['git', 'checkout', 'testomation'], stdout=PIPE, stderr=PIPE)
+        # => 3.1.72.2
 
-        self.assertEquals((3, 1, 73, 2), compute_meta_version(dependency_repositories=[
+        self.assertEquals((3, 1, 72, 2), compute_meta_version(dependency_repositories=[
             {
                 'url':self.repo_one,
                 'branch' : 'testomation',
@@ -278,6 +277,23 @@ class TestMetaRepository(TestCase):
             {
                 'url' : self.repo_two,
                 'branch' : 'testomation',
+            }
+        ]))
+
+    def test_current_branch_is_default_for_deps(self):
+        # 0.1.1 is my version
+        # 1.0.59.2 is first child
+        # 2.0.13 is second child
+        # => 3.1.73.2
+
+        check_call(['git', 'checkout', 'testomation'], stdout=PIPE, stderr=PIPE)
+
+        self.assertEquals((3, 1, 73, 2), compute_meta_version(dependency_repositories=[
+            {
+                'url':self.repo_one,
+            },
+            {
+                'url' : self.repo_two,
             }
         ]))
 

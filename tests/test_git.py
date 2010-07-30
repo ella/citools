@@ -10,6 +10,8 @@ from datetime import datetime
 
 from citools.git import retrieve_repository_metadata, fetch_repository, filter_parse_date
 
+from citools.version import get_current_branch
+
 class GitTestCase(TestCase):
     def _create_git_repository(self):
         # create temporary directory and initialize git repository there
@@ -54,6 +56,32 @@ class TestDateParsing(TestCase):
 
     def test_tz_parsed(self):
         self.assertEquals(datetime(2009, 12, 1, 20, 58, 01), filter_parse_date('Tue Dec 1 20:58:01 2009 +0100'))
+
+class TestGitBranchParsing(TestCase):
+
+    def test_no_branch_raises_error(self):
+        self.assertRaises(ValueError, get_current_branch, """ \n master\n  testomation\n""")
+
+    def test_no_branch_from_git_raises_error(self):
+        self.assertRaises(ValueError, get_current_branch, """\n  * (no branch)
+  automation
+  current
+  milestone/2010-06-09
+  milestone/2010-07-14
+  milestone/2010-07-28
+  tester
+  testomation
+""")
+
+    def test_proper_branch_parsed(self):
+        self.assertEquals("tester", get_current_branch("""  automation
+  current
+  milestone/2010-06-09
+  milestone/2010-07-14
+  milestone/2010-07-28
+* tester
+  testomation
+"""))
 
 class TestRepositoryFetching(GitTestCase):
 

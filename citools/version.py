@@ -1,3 +1,4 @@
+from subprocess import CalledProcessError
 from distutils.command.config import config
 import re
 import os
@@ -66,6 +67,7 @@ def sum_versions(version1, version2):
             final_version[position] += part
         position += 1
     return tuple(final_version)
+
 
 def get_git_describe(fix_environment=False, repository_directory=None, accepted_tag_pattern=None):
     """ Return output of git describe. If no tag found, initial version is considered to be 0.0.1 """
@@ -173,11 +175,69 @@ def replace_version_in_file(version, file):
     file.writelines(content)
     file.close()
 
+def get_current_branch(branch_output):
+    """
+    Parse output of git branch --no-color and return proper result
+    """
+    for line in branch_output.splitlines():
+        if line[2:] == "(no branch)":
+            raise ValueError("We're outside of branch")
+        elif line.startswith('*'):
+            return line[2:]
+
+    raise ValueError("No branch found")
+
+
+
+def retrieve_current_branch(fix_environment=False, repository_directory=None):
+    #######
+    # FIXME: repository_directory and fix_environment artifact shall be refactored
+    # in something like secure_and_fixed_git_command or something.
+    # But pay attention to nested command in get_git_describe, it probably shall be using callback.
+    # See #6679
+    #######
+    if repository_directory and not fix_environment:
+        raise ValueError("Both fix_environment and repository_directory or none of them must be given")
+
+    if fix_environment:
+        if not repository_directory:
+            raise ValueError(u"Cannot fix environment when repository directory not given")
+        env_git_dir = None
+        if os.environ.has_key('GIT_DIR'):
+            env_git_dir = os.environ['GIT_DIR']
+
+        os.environ['GIT_DIR'] = os.path.join(repository_directory, '.git')
+
+    try:
+        proc = Popen('git branch --no-color', stdout=PIPE, stderr=PIPE, shell=True)
+        stdout, stderr = proc.communicate()
+
+        if proc.returncode == 0:
+            return get_current_branch(stdout)
+        else:
+            raise CalledProcessError("git branch returned exit code %s" % proc.returncode)
+
+    finally:
+        if fix_environment:
+            if env_git_dir:
+                os.environ['GIT_DIR'] = env_git_dir
+            else:
+                del os.environ['GIT_DIR']
+
+
 def compute_meta_version(dependency_repositories, workdir=None):
+
+    kwargs = {}
+
     if workdir:
-        describe = get_git_describe(repository_directory=workdir, fix_environment=True)
-    else:
-        describe = get_git_describe()
+        kwargs.update({
+            'repository_directory' : workdir,
+            'fix_environment' : True
+        })
+
+    describe = get_git_describe(**kwargs)
+    meta_branch = retrieve_current_branch(**kwargs)
+
     version = compute_version(describe)
     
     repositories_dir = mkdtemp(dir=os.curdir, prefix="build-repository-dependencies-")
@@ -185,7 +245,7 @@ def compute_meta_version(dependency_repositories, workdir=None):
         if repository_dict.has_key('branch'):
             branch = repository_dict['branch']
         else:
-            branch = None
+            branch = meta_branch
         workdir = fetch_repository(repository_dict['url'], branch=branch, workdir=repositories_dir)
         new_version = compute_version(get_git_describe(repository_directory=workdir, fix_environment=True))
         version = sum_versions(version, new_version)
