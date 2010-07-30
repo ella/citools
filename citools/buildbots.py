@@ -152,7 +152,7 @@ class BuildbotPingGit(config):
     """
     Ping another buildbot. Heavily based on git_buildbot.py used in post-receive hooks
     """
-    description = "Ping Buildbot Master as if it's HEAD repository was received"
+    description = "Ping Buildbot Master as if it's FETCH_HEAD in given branch was received"
     user_options = [
     ]
 
@@ -170,7 +170,8 @@ class BuildbotPingGit(config):
             if master_config.has_key('branch'):
                 branch = master_config['branch']
             else:
-                branch = "master"
+                from citools.version import retrieve_current_branch
+                branch = retrieve_current_branch()
 
             buildbot_ping_git(master_config['host'], master_config['port'], branch)
 
