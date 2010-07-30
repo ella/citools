@@ -204,10 +204,12 @@ class TestMetaRepository(TestCase):
 
         os.chdir(self.repo_parent)
 
-    def prepare_repository(self, directory, tag_name, number_of_commits_since=0, file_name="test.txt"):
+    def prepare_repository(self, directory, tag_name, number_of_commits_since=0, file_name="test.txt", testomation_branch=True):
         """
         Prepare a repository inside given directory, with first commit tagged
         as tag_name and with additional commits
+
+        With testomation_branch set to true, one additional commit is given in testomation branch
         """
         os.chdir(directory)
         check_call(['git', 'init'], stdout=PIPE, stdin=PIPE)
@@ -234,6 +236,19 @@ class TestMetaRepository(TestCase):
                 check_call(['git', 'add', '*'])
                 check_call(['git', 'commit', '-a', '-m', '%s commit since' % i], stdout=PIPE, stdin=PIPE)
 
+        if testomation_branch:
+            check_call(['git', 'checkout', '-b', 'testomation'], stdout=PIPE, stderr=PIPE)
+
+            f = open(os.path.join(directory, file_name), 'wb')
+            f.write("testomation test\n")
+            f.close()
+            check_call(['git', 'add', '*'])
+            check_call(['git', 'commit', '-a', '-m', 'testomation test'], stdout=PIPE, stderr=PIPE)
+
+            # backward compatibility: go back to master
+            check_call(['git', 'checkout', 'master'], stdout=PIPE, stderr=PIPE)
+
+
     def test_proper_child_version(self):
         self.assertEquals((1, 0, 59, 1), compute_version(get_git_describe(repository_directory=self.repo_one, fix_environment=True)))
 
@@ -246,6 +261,25 @@ class TestMetaRepository(TestCase):
         # 2.0.12 is second child
         # => 3.1.71.1
         self.assertEquals((3, 1, 71, 1), compute_meta_version(dependency_repositories=[{'url':self.repo_one}, {'url' : self.repo_two}]))
+
+
+    def test_computing_meta_version_accepts_branch(self):
+        # 0.1.1 is my version
+        # 1.0.59.2 is first child
+        # 2.0.13 is second child
+        # => 3.1.73.2
+        check_call(['git', 'checkout', 'testomation'], stdout=PIPE, stderr=PIPE)
+
+        self.assertEquals((3, 1, 73, 2), compute_meta_version(dependency_repositories=[
+            {
+                'url':self.repo_one,
+                'branch' : 'testomation',
+            },
+            {
+                'url' : self.repo_two,
+                'branch' : 'testomation',
+            }
+        ]))
 
     def test_repository_fetching(self):
         dir = mkdtemp()
