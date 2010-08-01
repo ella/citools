@@ -316,6 +316,9 @@ class GitSetVersion(config):
 
             replace_version_in_file(version, 'setup.py')
 
+            if os.path.exists('pavement.py'):
+                replace_version_in_file(version, 'pavement.py')
+
             self.distribution.metadata.version = version_str
             print "Current version is %s" % version_str
         except Exception:
