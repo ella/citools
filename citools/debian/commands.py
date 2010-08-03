@@ -9,7 +9,7 @@ from datetime import datetime
 
 from distutils.core import Command
 
-from citools.version import get_git_describe, compute_version, compute_meta_version, get_git_head_hash
+from citools.version import get_git_describe, compute_version, compute_meta_version, get_git_head_hash, retrieve_current_branch
 from citools.debian.control import ControlFile, Dependency
 from citools.git import fetch_repository
 
@@ -53,9 +53,16 @@ def get_new_dependencies(dir):
 
     return packages
 
-def fetch_new_dependencies(repository):
+def fetch_new_dependencies(repository, workdir=None):
+    if repository.has_key('branch'):
+        branch = repository['branch']
+    else:
+        if workdir:
+            branch = retrieve_current_branch(repository_directory=workdir, fix_environment=True)
+        else:
+            branch = retrieve_current_branch()
     repo = fetch_repository(
-        repository=repository['url'], branch=repository['branch']
+        repository=repository['url'], branch=branch
     )
     deps = get_new_dependencies(repo)
 
@@ -109,7 +116,7 @@ def update_dependency_versions(repositories, control_path, workdir=None):
             assert current_meta_version == package.version, "Versioned packages with different versions, aborting"
 
     for repository in repositories:
-        deps = fetch_new_dependencies(repository)
+        deps = fetch_new_dependencies(repository, workdir)
         deps_from_repositories.extend(deps)
 
 

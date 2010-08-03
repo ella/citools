@@ -3,6 +3,7 @@ import os
 from shutil import copytree
 
 from citools.git import fetch_repository
+from citools.version import retrieve_current_branch
 
 def copy_images(repositories, static_dir):
     """
@@ -10,7 +11,11 @@ def copy_images(repositories, static_dir):
     to static_dir/project, if directory exists
     """
     for repository in repositories:
-        dir = fetch_repository(repository['url'], workdir=os.curdir, branch=repository['branch'])
+        if repository.has_key('branch'):
+            branch = repository['branch']
+        else:
+            branch = retrieve_current_branch(repository_directory=os.curdir, fix_environment=True)
+        dir = fetch_repository(repository['url'], workdir=os.curdir, branch=branch)
         package_static_dir = os.path.join(dir, repository['package_name'], 'static')
         if os.path.exists(package_static_dir):
             copytree(package_static_dir, os.path.join(static_dir, repository['package_name']))
