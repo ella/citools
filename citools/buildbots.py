@@ -1,100 +1,104 @@
 from distutils.command.config import config
 import logging
 
-from buildbot.steps import shell
-
 __all__ = (
     "DatabaseBackupRestore", "CriticalTest", "DatabaseBackupRestore",
     "AptitudeInstall", "DatabaseMigrate", "GitSetVersion", "BuildDebianPackage",
     "CreateDirectory", "BuildSphinxDoc", 
 )
 
-class CriticalShellCommand(shell.ShellCommand):
-    warnOnFailure = 1
-    flunkOnFailure = 1
-    haltOnFailure = 1
+try:
+    from buildbot.steps import shell
 
-class CriticalTest(shell.Test):
-    name = "test"
-    description = ["running tests"]
-    descriptionDone = ["tested"]
-    warnOnFailure = 1
-    flunkOnFailure = 1
-    haltOnFailure = 1
+    class CriticalShellCommand(shell.ShellCommand):
+        warnOnFailure = 1
+        flunkOnFailure = 1
+        haltOnFailure = 1
 
-class DatabaseBackupRestore(CriticalShellCommand):
-    name = "restore backup"
-    description = ["restoring backup"]
-    descriptionDone = ["backup restored"]
-    command = ["citools", "restore_backup"]
+    class CriticalTest(shell.Test):
+        name = "test"
+        description = ["running tests"]
+        descriptionDone = ["tested"]
+        warnOnFailure = 1
+        flunkOnFailure = 1
+        haltOnFailure = 1
 
-    def __init__(self, citools_config, command=None, **kwargs):
-        if not command:
-            command = [i for i in self.command]
-            command.append("--config=%s" % citools_config)
+    class DatabaseBackupRestore(CriticalShellCommand):
+        name = "restore backup"
+        description = ["restoring backup"]
+        descriptionDone = ["backup restored"]
+        command = ["citools", "restore_backup"]
 
-        CriticalShellCommand.__init__(self, command=command, **kwargs)
+        def __init__(self, citools_config, command=None, **kwargs):
+            if not command:
+                command = [i for i in self.command]
+                command.append("--config=%s" % citools_config)
 
-class AptitudeInstall(CriticalShellCommand):
-    name = "install package"
-    description = ["installing package"]
-    descriptionDone = ["package installed"]
-    command = ["aptitude", "install", "-r", "-y"]
+            CriticalShellCommand.__init__(self, command=command, **kwargs)
 
-    def __init__(self, package_name, command=None, use_sudo=True, allow_untrusted=True, **kwargs):
-        if not command:
-            if use_sudo:
-                command = ['sudo']
-            else:
-                command = []
-            command += [i for i in self.command]
-            command.append(package_name)
-            if allow_untrusted and '--allow-untrusted' not in command:
-                command.append('--allow-untrusted')
-        CriticalShellCommand.__init__(self, command=command, **kwargs)
+    class AptitudeInstall(CriticalShellCommand):
+        name = "install package"
+        description = ["installing package"]
+        descriptionDone = ["package installed"]
+        command = ["aptitude", "install", "-r", "-y"]
+
+        def __init__(self, package_name, command=None, use_sudo=True, allow_untrusted=True, **kwargs):
+            if not command:
+                if use_sudo:
+                    command = ['sudo']
+                else:
+                    command = []
+                command += [i for i in self.command]
+                command.append(package_name)
+                if allow_untrusted and '--allow-untrusted' not in command:
+                    command.append('--allow-untrusted')
+            CriticalShellCommand.__init__(self, command=command, **kwargs)
 
 
-class DatabaseMigrate(CriticalShellCommand):
-    name = "migrating database"
-    description = ["migrating database"]
-    descriptionDone = ["database migrated"]
-    command = None
+    class DatabaseMigrate(CriticalShellCommand):
+        name = "migrating database"
+        description = ["migrating database"]
+        descriptionDone = ["database migrated"]
+        command = None
 
-    def __init__(self, manage_command, command=None, **kwargs):
-        if not command:
-            command = [manage_command, "migrate"]
-        CriticalShellCommand.__init__(self, command=command, **kwargs)
+        def __init__(self, manage_command, command=None, **kwargs):
+            if not command:
+                command = [manage_command, "migrate"]
+            CriticalShellCommand.__init__(self, command=command, **kwargs)
 
-class GitSetVersion(CriticalShellCommand):
-    name = "update version"
-    description = ["setting version"]
-    descriptionDone = ["version set"]
-    command = ["python", "setup.py", "compute_version_git"]
+    class GitSetVersion(CriticalShellCommand):
+        name = "update version"
+        description = ["setting version"]
+        descriptionDone = ["version set"]
+        command = ["python", "setup.py", "compute_version_git"]
 
-class GitSetMetaVersion(CriticalShellCommand):
-    name = "update version"
-    description = ["setting version"]
-    descriptionDone = ["version set"]
-    command = ["python", "setup.py", "compute_version_meta_git"]
+    class GitSetMetaVersion(CriticalShellCommand):
+        name = "update version"
+        description = ["setting version"]
+        descriptionDone = ["version set"]
+        command = ["python", "setup.py", "compute_version_meta_git"]
 
-class BuildDebianPackage(CriticalShellCommand):
-    name = "build debian package"
-    description = ["building debian package"]
-    descriptionDone = ["package build"]
-    command = ["python", "setup.py", "create_debian_package"]
+    class BuildDebianPackage(CriticalShellCommand):
+        name = "build debian package"
+        description = ["building debian package"]
+        descriptionDone = ["package build"]
+        command = ["python", "setup.py", "create_debian_package"]
 
-class BuildDebianMetaPackage(CriticalShellCommand):
-    name = "build debian meta package"
-    description = ["building debian meat package"]
-    descriptionDone = ["meta package build"]
-    command = ["python", "setup.py", "create_debian_meta_package"]
+    class BuildDebianMetaPackage(CriticalShellCommand):
+        name = "build debian meta package"
+        description = ["building debian meat package"]
+        descriptionDone = ["meta package build"]
+        command = ["python", "setup.py", "create_debian_meta_package"]
 
-class GitPingMaster(CriticalShellCommand):
-    name = "ping another master"
-    description = ["pinging another master"]
-    descriptionDone = ["master ping'd"]
-    command = ["python", "setup.py", "buildbot_ping_git"]
+    class GitPingMaster(CriticalShellCommand):
+        name = "ping another master"
+        description = ["pinging another master"]
+        descriptionDone = ["master ping'd"]
+        command = ["python", "setup.py", "buildbot_ping_git"]
 
+except ImportError:
+    import warnings
+    warnings.warn("Buildbot installation not found; buildbot's command not available")
 
 def validate_meta_buildbot(dist, attr, value):
     pass
