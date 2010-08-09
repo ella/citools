@@ -279,7 +279,7 @@ class GitSetMetaVersion(config):
         Update on all places as in git_set_version.
         """
         try:
-            format = "%s-[0-9]*" % self.distribution.name
+            format = "%s-[0-9]*" % self.distribution.metadata.get_name()
             meta_version = compute_meta_version(self.distribution.dependencies_git_repositories, accepted_tag_pattern=format)
 
             version = meta_version
@@ -316,8 +316,8 @@ class GitSetVersion(config):
         Because of line endings, should be not run on Windows."""
         try:
             # format is given, sorry. If you want it configurable, use paver
-            format = "%s-[0-9]*" % self.distribution.name
-            
+            format = "%s-[0-9]*" % self.distribution.metadata.get_name()
+
             current_git_version = get_git_describe(accepted_tag_pattern=format)
 
             version = compute_version(current_git_version)
