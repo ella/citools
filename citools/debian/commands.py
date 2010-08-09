@@ -43,11 +43,11 @@ class BuildDebianPackage(Command):
         check_call(['dpkg-buildpackage', '-rfakeroot-tcp', '-us', '-uc'])
 
 
-def get_new_dependencies(dir):
+def get_new_dependencies(dir, accepted_tag_pattern=None):
     cfile = ControlFile(filename=os.path.join(dir, 'debian', 'control'))
     packages = cfile.get_packages()
 
-    version = ".".join(map(str, compute_version(get_git_describe(repository_directory=dir, fix_environment=True))))
+    version = ".".join(map(str, compute_version(get_git_describe(repository_directory=dir, fix_environment=True, accepted_tag_pattern=accepted_tag_pattern))))
     for p in packages:
         p.version = version
 
@@ -64,7 +64,10 @@ def fetch_new_dependencies(repository, workdir=None):
     repo = fetch_repository(
         repository=repository['url'], branch=branch
     )
-    deps = get_new_dependencies(repo)
+    #FIXME: This should not be hardcoded
+    project_pattern = "%s-[0-9]*" % repository['package_name']
+
+    deps = get_new_dependencies(repo, accepted_tag_pattern=project_pattern)
 
     return deps
 
@@ -95,7 +98,7 @@ def replace_versioned_debian_files(debian_path, original_version, new_version, c
 
                     os.remove(os.path.join(path, file))
 
-def update_dependency_versions(repositories, control_path, workdir=None):
+def update_dependency_versions(repositories, control_path, workdir=None, accepted_tag_pattern=None):
     """
     Update control_path (presumably debian/control) with package version collected
     by parsing debian/controls in dependencies.
@@ -121,12 +124,12 @@ def update_dependency_versions(repositories, control_path, workdir=None):
 
 
     #FIXME: This will download deps again, fix it
-    meta_version = compute_meta_version(repositories, workdir=workdir)
+    meta_version = compute_meta_version(repositories, workdir=workdir, accepted_tag_pattern=accepted_tag_pattern)
     meta_version_string = ".".join(map(str, meta_version))
     
 
     # also add myself as dependency
-    deps = get_new_dependencies(workdir)
+    deps = get_new_dependencies(workdir, accepted_tag_pattern=accepted_tag_pattern)
 
     # deps are my actual version; we want to update it to metaversion
     for dep in deps:
@@ -158,7 +161,8 @@ class UpdateDependencyVersions(Command):
 
     def run(self):
         try:
-            update_dependency_versions(self.distribution.dependencies_git_repositories, os.path.join('debian', 'control'))
+            format = "%s-[0-9]*" % self.distribution.metadata.get_name()
+            update_dependency_versions(self.distribution.dependencies_git_repositories, os.path.join('debian', 'control'), accepted_tag_pattern=format)
         except:
             import traceback
             traceback.print_exc()
