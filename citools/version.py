@@ -189,7 +189,7 @@ def get_current_branch(branch_output):
 
 
 
-def retrieve_current_branch(fix_environment=False, repository_directory=None):
+def retrieve_current_branch(fix_environment=False, repository_directory=None, **kwargs):
     #######
     # FIXME: repository_directory and fix_environment artifact shall be refactored
     # in something like secure_and_fixed_git_command or something.
@@ -225,7 +225,7 @@ def retrieve_current_branch(fix_environment=False, repository_directory=None):
                 del os.environ['GIT_DIR']
 
 
-def compute_meta_version(dependency_repositories, workdir=None):
+def compute_meta_version(dependency_repositories, workdir=None, accepted_tag_pattern=None):
 
     kwargs = {}
 
@@ -233,6 +233,11 @@ def compute_meta_version(dependency_repositories, workdir=None):
         kwargs.update({
             'repository_directory' : workdir,
             'fix_environment' : True
+        })
+
+    if accepted_tag_pattern:
+        kwargs.update({
+            'accepted_tag_pattern' : accepted_tag_pattern
         })
 
     describe = get_git_describe(**kwargs)
@@ -247,7 +252,10 @@ def compute_meta_version(dependency_repositories, workdir=None):
         else:
             branch = meta_branch
         workdir = fetch_repository(repository_dict['url'], branch=branch, workdir=repositories_dir)
-        new_version = compute_version(get_git_describe(repository_directory=workdir, fix_environment=True))
+        # this is pattern for dependency repo, NOT for for ourselves -> pattern of it, not ours
+        # now hardcoded, but shall be retrieved via egg_info or custom command
+        project_pattern = "%s-[0-9]*" % repository_dict['package_name']
+        new_version = compute_version(get_git_describe(repository_directory=workdir, fix_environment=True, accepted_tag_pattern=project_pattern))
         version = sum_versions(version, new_version)
     return version
 
@@ -271,7 +279,8 @@ class GitSetMetaVersion(config):
         Update on all places as in git_set_version.
         """
         try:
-            meta_version = compute_meta_version(self.distribution.dependencies_git_repositories)
+            format = "%s-[0-9]*" % self.distribution.name
+            meta_version = compute_meta_version(self.distribution.dependencies_git_repositories, accepted_tag_pattern=format)
 
             version = meta_version
             version_str = '.'.join(map(str, version))
@@ -306,7 +315,10 @@ class GitSetVersion(config):
         $name/__init__.py file (relatively placed to $cwd.) and to be a tuple of three integers.
         Because of line endings, should be not run on Windows."""
         try:
-            current_git_version = get_git_describe()
+            # format is given, sorry. If you want it configurable, use paver
+            format = "%s-[0-9]*" % self.distribution.name
+            
+            current_git_version = get_git_describe(accepted_tag_pattern=format)
 
             version = compute_version(current_git_version)
             version_str = '.'.join(map(str, version))
