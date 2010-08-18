@@ -260,7 +260,16 @@ class TestMetaRepository(TestCase):
         # 1.0.59.1 is first child
         # 2.0.12 is second child
         # => 3.1.71.1
-        self.assertEquals((3, 1, 71, 1), compute_meta_version(dependency_repositories=[{'url':self.repo_one}, {'url' : self.repo_two}]))
+        self.assertEquals((3, 1, 71, 1), compute_meta_version(dependency_repositories=[
+            {
+                'url':self.repo_one,
+                'package_name' : 'project',
+            },
+            {
+                'url' : self.repo_two,
+                'package_name' : 'secondproject',
+            }
+        ]))
 
 
     def test_computing_meta_version_accepts_branch(self):
@@ -273,10 +282,12 @@ class TestMetaRepository(TestCase):
             {
                 'url':self.repo_one,
                 'branch' : 'testomation',
+                'package_name' : 'project',
             },
             {
                 'url' : self.repo_two,
                 'branch' : 'testomation',
+                'package_name' : 'secondproject',
             }
         ]))
 
@@ -291,9 +302,11 @@ class TestMetaRepository(TestCase):
         self.assertEquals((3, 1, 73, 2), compute_meta_version(dependency_repositories=[
             {
                 'url':self.repo_one,
+                'package_name' : 'project',
             },
             {
                 'url' : self.repo_two,
+                'package_name' : 'secondproject',
             }
         ]))
 

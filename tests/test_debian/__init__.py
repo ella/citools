@@ -135,7 +135,7 @@ class TestUpdateDependencyVersions(object):
         # tag it
         tag_name = '%s-%s' % (project_name, tag_number)
         tag_message = '"%s tagged %s"' % (project_name, tag_number)
-        check_call(['git', 'tag', '-a', tag_number, '-m', tag_message], stdout=PIPE, stdin=PIPE)
+        check_call(['git', 'tag', '-a', tag_name, '-m', tag_message], stdout=PIPE, stdin=PIPE)
 
         # create debianisation and package in repo
         os.mkdir('debian')
