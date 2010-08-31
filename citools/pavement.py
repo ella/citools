@@ -115,3 +115,16 @@ def bump():
 
     sh('git tag -a %s -m "paver bump to version %s"' % (tag, tag))
 
+@task
+def compute_version(options):
+    from citools.version import get_git_describe, compute_version
+    #FIXME
+    format = "%s-[0-9]*" % options.name
+
+    current_git_version = get_git_describe(accepted_tag_pattern=format)
+
+    version = compute_version(current_git_version)
+    version_str = '.'.join(map(str, version))
+
+    print version_str
+

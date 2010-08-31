@@ -1,4 +1,8 @@
 *.py[co]
 .*.swp
 nbproject
+/cached_repositories.ini
+/include
+/lib*
+
 *~

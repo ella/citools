@@ -1,9 +1,14 @@
-from nose.plugins.skip import SkipTest
-
+from os import mkdir, chdir
+from shutil import copytree, ignore_patterns
+from tempfile import mkdtemp
+from subprocess import check_call, CalledProcessError, PIPE
 import os
+import os.path
+from shutil import rmtree
+
 from unittest import TestCase
 
-
+from nose.plugins.skip import SkipTest
 
 class MongoTestCase(TestCase):
     def setUp(self):
@@ -37,3 +42,46 @@ class MongoTestCase(TestCase):
 
     def tearDown(self):
         self.connection.drop_database(self.database)
+
+class PaverTestCase(TestCase):
+    """
+    This is true integration test and is kind of creepy.
+
+    It will take example project in expected layout, placed in test/exproject,
+    copy it in temporary environment, where it will be taken under git version control.
+
+    Also provide handy functions to create commits for further version tests.
+    """
+
+    def setUp(self):
+        super(PaverTestCase, self).setUp()
+        self.oldcwd = os.getcwd()
+
+        self.example_project_source = os.path.abspath(os.path.join(os.path.dirname(__file__), 'exproject'))
+
+        if not self.example_project_source:
+            raise ValueError("Cannot find example project, WTF?")
+
+        try:
+            check_call(['git', '--help'], stdout=PIPE, stderr=PIPE)
+        except CalledProcessError:
+            raise SkipTest("git must be available and in $PATH in order to preform this test")
+
+        self.holder = mkdtemp(prefix='test-repository-')
+        self.repo = os.path.abspath(os.path.join(self.holder, 'exproject'))
+
+        copytree(self.example_project_source, self.repo, ignore=ignore_patterns('*.pyc', '*.pyo'))
+        chdir(self.repo)
+
+        check_call(['git', 'init'], cwd=self.repo, stdout=PIPE, stderr=PIPE)
+        check_call(['git', 'add', '*'], cwd=self.repo)
+        check_call(['git', 'commit', '-a', '-m', "Initial project import"], cwd=self.repo, stdout=PIPE, stderr=PIPE)
+
+        
+
+    def tearDown(self):
+        os.chdir(self.oldcwd)
+
+        rmtree(self.holder)
+
+        super(PaverTestCase, self).setUp()
