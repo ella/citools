@@ -116,15 +116,39 @@ def bump():
     sh('git tag -a %s -m "paver bump to version %s"' % (tag, tag))
 
 @task
-def compute_version(options):
+@cmdopts([
+    ('accepted-tag-pattern=', 't', 'Tag pattern passed to git describe for version recognition'),
+])
+def compute_version_git(options):
     from citools.version import get_git_describe, compute_version
-    #FIXME
-    format = "%s-[0-9]*" % options.name
 
-    current_git_version = get_git_describe(accepted_tag_pattern=format)
+    if not getattr(options, "accepted_tag_pattern", None):
+        options.accepted_tag_pattern = "%s-[0-9]*" % options.name
+
+    current_git_version = get_git_describe(accepted_tag_pattern=options.accepted_tag_pattern)
 
     version = compute_version(current_git_version)
     version_str = '.'.join(map(str, version))
 
     print version_str
 
+@task
+@needs('compute_version_git')
+def compute_version(options):
+    pass
+
+
+@task
+def build_debian_package(options):
+    check_call(['dpkg-buildpackage', '-rfakeroot-tcp', '-us', '-uc'])
+
+@task
+def upload_debian_package(options):
+    pass
+
+@task
+@needs('compute_version')
+@needs('build_debian_package')
+@needs('upload_debian_package')
+def create_debian_package(options):
+    pass

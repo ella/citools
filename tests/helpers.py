@@ -74,6 +74,12 @@ class PaverTestCase(TestCase):
         chdir(self.repo)
 
         check_call(['git', 'init'], cwd=self.repo, stdout=PIPE, stderr=PIPE)
+
+        # configure me
+        check_call(['git', 'config', 'user.email', 'testcase@example.com'], cwd=self.repo)
+        check_call(['git', 'config', 'user.name', 'Testing Testorz'], cwd=self.repo, stdout=PIPE, stderr=PIPE)
+
+
         check_call(['git', 'add', '*'], cwd=self.repo)
         check_call(['git', 'commit', '-a', '-m', "Initial project import"], cwd=self.repo, stdout=PIPE, stderr=PIPE)
 
