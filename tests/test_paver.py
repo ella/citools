@@ -1,6 +1,8 @@
-
-
+from nose.plugins.skip import SkipTest
+from subprocess import CalledProcessError
+import os
 from subprocess import check_call, Popen, PIPE
+
 from helpers import PaverTestCase
 
 class TestPaverVersioning(PaverTestCase):
@@ -34,7 +36,23 @@ class TestPaverVersioning(PaverTestCase):
 
 class TestDebianPackaging(PaverTestCase):
 
+    def setUp(self):
+        super(TestDebianPackaging, self).setUp()
+
+        try:
+            check_call(['dpkg-buildpackage', '--help'], stdout=PIPE, stderr=PIPE)
+        except CalledProcessError:
+            raise SkipTest("This test must run on debian with buildpackage installed")
+
+        check_call(['git', 'tag', '-a', 'exproject-3.3', '-m', '"Tagging"'])
+        
+
     def test_version_computing(self):
-        p = Popen(['paver', '-q', 'compute_version'], stdout=PIPE)
-        stdout, stderr = p.communicate()
-        self.assertEquals('0.0.1', stdout.strip())
+        check_call(['paver', '-q', 'replace_version'], stderr=PIPE, stdout=PIPE)
+        check_call(['paver', 'create_debian_package'], stderr=PIPE, stdout=PIPE)
+
+        self.assertTrue(os.path.exists(os.path.join(self.repo, os.pardir, "python-exproject_3.3.0_all.deb")))
+        self.assertTrue(os.path.exists(os.path.join(self.repo, os.pardir, "python-exproject_3.3.0.dsc")))
+
+
+    # TODO: paver create_stdeb

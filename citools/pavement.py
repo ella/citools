@@ -1,6 +1,7 @@
 import os
 import sys
 from os.path import join, exists
+from subprocess import check_call
 
 
 from paver.easy import *
@@ -127,16 +128,34 @@ def compute_version_git(options):
 
     current_git_version = get_git_describe(accepted_tag_pattern=options.accepted_tag_pattern)
 
-    version = compute_version(current_git_version)
-    version_str = '.'.join(map(str, version))
+    options.version = compute_version(current_git_version)
+    options.version_str = '.'.join(map(str, options.version))
 
-    print version_str
+    print options.version_str
 
 @task
 @needs('compute_version_git')
 def compute_version(options):
     pass
 
+@task
+def update_debian_version(options):
+    from citools.debian.commands import update_debianization
+    update_debianization(options.version)
+
+@task
+@needs(['compute_version'])
+def replace_version(options):
+    from citools.version import replace_inits, replace_scripts, replace_version_in_file
+
+    replace_inits(options.version, options.packages)
+    # replace_scripts(options.version, options.py_modules)
+
+    replace_version_in_file(options.version, 'setup.py')
+
+    if os.path.exists('pavement.py'):
+        replace_version_in_file(options.version, 'pavement.py')
+    
 
 @task
 def build_debian_package(options):
@@ -147,8 +166,11 @@ def upload_debian_package(options):
     pass
 
 @task
-@needs('compute_version')
-@needs('build_debian_package')
-@needs('upload_debian_package')
+@needs(['replace_version', 'update_debian_version', 'build_debian_package'])
+#@cmdopts([
+#    ('without-upload', 'w', 'Do not call upload_debian_package'),
+#])
 def create_debian_package(options):
     pass
+#    if options.without_upload:
+#        call_task(upload_debian_package(options))
