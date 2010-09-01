@@ -1,3 +1,5 @@
+from shutil import rmtree
+from tempfile import mkdtemp
 from nose.plugins.skip import SkipTest
 from subprocess import CalledProcessError
 import os
@@ -34,10 +36,10 @@ class TestPaverVersioning(PaverTestCase):
         self.assertEquals('3.3.0', stdout.strip())
 
 
-class TestDebianPackaging(PaverTestCase):
+class DebianPackageTestCase(PaverTestCase):
 
     def setUp(self):
-        super(TestDebianPackaging, self).setUp()
+        super(DebianPackageTestCase, self).setUp()
 
         try:
             check_call(['dpkg-buildpackage', '--help'], stdout=PIPE, stderr=PIPE)
@@ -45,9 +47,10 @@ class TestDebianPackaging(PaverTestCase):
             raise SkipTest("This test must run on debian with buildpackage installed")
 
         check_call(['git', 'tag', '-a', 'exproject-3.3', '-m', '"Tagging"'])
-        
 
-    def test_version_computing(self):
+class TestDebianPackaging(DebianPackageTestCase):
+
+    def test_package_creation(self):
         check_call(['paver', '-q', 'replace_version'], stderr=PIPE, stdout=PIPE)
         check_call(['paver', 'create_debian_package'], stderr=PIPE, stdout=PIPE)
 
@@ -55,4 +58,44 @@ class TestDebianPackaging(PaverTestCase):
         self.assertTrue(os.path.exists(os.path.join(self.repo, os.pardir, "python-exproject_3.3.0.dsc")))
 
 
-    # TODO: paver create_stdeb
+
+class TestFtpUploadFunctions(DebianPackageTestCase):
+
+    def setUp(self):
+        super(TestFtpUploadFunctions, self).setUp()
+
+        self.prepare_ftp_server()
+
+
+    def prepare_ftp_server(self):
+        try:
+            from pyftpdlib import ftpserver
+        except ImportError:
+            raise SkipTest("This test requires pyftpdlib to be installed")
+
+        from helpers import FTPd
+
+        self.ftp_home = mkdtemp(prefix='ftp-home-')
+        self.username = self.password = "12345"
+        self.server = FTPd(user=self.username, passwd=self.password, home=self.ftp_home)
+        self.server.start()
+        
+    def test_ftp_upload(self):
+        check_call(['paver', '-q', 'replace_version'], stderr=PIPE, stdout=PIPE)
+        check_call(['paver', 'create_debian_package'], stderr=PIPE, stdout=PIPE)
+        
+        check_call([
+            'paver', 'upload_debian_package',
+            '--ftp-host=%s' % self.server.host, '--ftp-port=%s' % self.server.port,
+            '--ftp-user=%s' % self.username, '--ftp-password=%s' % self.password,
+            '--ftp-directory=test/nested/directories'
+        ], stderr=PIPE, stdout=PIPE)
+
+        self.assertTrue(os.path.exists(os.path.join(self.ftp_home, "test", "nested", "directories", "python-exproject", "python-exproject_3.3.0_all.deb")))
+
+    def tearDown(self):
+        self.server.stop()
+        rmtree(self.ftp_home)
+
+        super(TestFtpUploadFunctions, self).tearDown()
+

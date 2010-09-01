@@ -3,12 +3,18 @@ import os
 from os import chdir
 import os.path
 from shutil import rmtree, Error, copy2, copystat
+import socket
 from subprocess import check_call, CalledProcessError, PIPE
 from tempfile import mkdtemp
 
 from unittest import TestCase
 
 from nose.plugins.skip import SkipTest
+
+try:
+    HOST = socket.gethostbyname('localhost')
+except socket.error:
+    HOST = 'localhost'
 
 ###########
 ### copytree and ignore_patterns copied from py2.6 source to be usable in py2.5
@@ -176,3 +182,92 @@ class PaverTestCase(TestCase):
         rmtree(self.holder)
 
         super(PaverTestCase, self).setUp()
+
+try:
+
+    #######
+    ### FTPd, thread-based wrapper around pyftpdlib's ftpserver
+    ### taken from pyftpdlib test suite. See http://code.google.com/p/pyftpdlib/
+    ### Copyright Giampaolo Rodola <g.rodola@gmail.com>
+    ### Distributed under MIT license
+    ### __init__ args added by Almad <bugs@almad.net>
+    #######
+
+    from pyftpdlib import ftpserver
+    import threading
+    
+    class FTPd(threading.Thread):
+        """A threaded FTP server used for running tests.
+
+        This is basically a modified version of the FTPServer class which
+        wraps the polling loop into a thread.
+
+        The instance returned can be used to start(), stop() and
+        eventually re-start() the server.
+        """
+        handler = ftpserver.FTPHandler
+
+        def __init__(self, host=HOST, port=0, verbose=False, user='test', passwd='test', home='/tmp'):
+            threading.Thread.__init__(self)
+            self.__serving = False
+            self.__stopped = False
+            self.__lock = threading.Lock()
+            self.__flag = threading.Event()
+
+            if not verbose:
+                ftpserver.log = ftpserver.logline = lambda x: x
+                
+            authorizer = ftpserver.DummyAuthorizer()
+            authorizer.add_user(user, passwd, home, perm='elradfmw')  # full perms
+            authorizer.add_anonymous(home)
+            self.handler.authorizer = authorizer
+            self.server = ftpserver.FTPServer((host, port), self.handler)
+            self.host, self.port = self.server.socket.getsockname()[:2]
+
+        def __repr__(self):
+            status = [self.__class__.__module__ + "." + self.__class__.__name__]
+            if self.__serving:
+                status.append('active')
+            else:
+                status.append('inactive')
+            status.append('%s:%s' % self.server.socket.getsockname()[:2])
+            return '<%s at %#x>' % (' '.join(status), id(self))
+
+        def start(self, timeout=0.01, use_poll=False, map=None):
+            """Start serving until an explicit stop() request.
+            Polls for shutdown every 'timeout' seconds.
+            """
+            if self.__serving:
+                raise RuntimeError("Server already started")
+            if self.__stopped:
+                # ensure the server can be started again
+                FTPd.__init__(self, self.server.socket.getsockname(), self.handler)
+            self.__timeout = timeout
+            self.__use_poll = use_poll
+            self.__map = map
+            threading.Thread.start(self)
+            self.__flag.wait()
+
+        def run(self):
+            self.__serving = True
+            self.__flag.set()
+            while self.__serving:
+                self.__lock.acquire()
+                self.server.serve_forever(timeout=self.__timeout, count=1,
+                                          use_poll=self.__use_poll, map=self.__map)
+                self.__lock.release()
+            self.server.close_all(ignore_all=True)
+
+        def stop(self):
+            """Stop serving (also disconnecting all currently connected
+            clients) by telling the serve_forever() loop to stop and
+            waits until it does.
+            """
+            if not self.__serving:
+                raise RuntimeError("Server not started yet")
+            self.__serving = False
+            self.__stopped = True
+            self.join()
+
+except ImportError:
+    raise

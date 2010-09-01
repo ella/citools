@@ -1,8 +1,8 @@
+from ftplib import error_perm
 import os
 import sys
 from os.path import join, exists
 from subprocess import check_call
-
 
 from paver.easy import *
 
@@ -162,14 +162,90 @@ def build_debian_package(options):
     check_call(['dpkg-buildpackage', '-rfakeroot-tcp', '-us', '-uc'])
 
 @task
+@cmdopts([
+    ('ftp-host=', 'o', 'FTP host (for debian package upload)'),
+    ('ftp-port=', 'p', 'FTP port (for debian package upload)'),
+    ('ftp-user=', 'u', 'FTP username (for debian package upload)'),
+    ('ftp-password=', 'w', 'FTP password (for debian package upload)'),
+    ('ftp-directory=', 'd', 'FTP directory (in which to packages directories are) (for debian package upload)'),
+    ('forgive-no-packages', 'f', 'It is OK to upload even if there are no packages'),
+])
 def upload_debian_package(options):
-    pass
+    import os, re
+    from ftplib import FTP
+    
+    def get_packages_names():
+        control = os.path.join('debian', 'control')
+        if not os.path.exists(control):
+            raise ValueError("Cannot find debian/control")
+        packages = []
+        version_pattern = re.compile("^(Package\:){1}(\s)*(?P<name>[\w\-\.]+).*(\s)*$")
+        for line in open(control, 'r'):
+            match = re.match(version_pattern, line)
+            if match:
+                packages.append(match.groupdict()['name'])
+        return packages
+
+
+    def get_package_path(package_name, module_name, current_version=None):
+        """ Return filesystem path to debian package build by bdist_deb"""
+        if not current_version:
+            #FIXME: not to hardcode
+            format = "%s-[0-9]*" % module_name
+            current_version = '.'.join(map(str, compute_version(get_git_describe(accepted_tag_pattern=format))))
+        package_name = u"%(name)s_%(version)s_%(arch)s.deb" % {
+            'name' : package_name,
+            'version' : current_version,
+            'arch' : 'all'
+        }
+        return os.path.normpath(os.path.join(os.curdir, os.pardir, package_name))
+
+    def upload_package(host, username, password, directory, package_path, package_name, port=21):
+        ftp = FTP()
+        ftp.connect(host, port)
+        try:
+            ftp.login(username, password)
+
+            for dir in directory:
+                try:
+                    ftp.cwd(dir)
+                except error_perm:
+                    # probably not exists, try again
+                    ftp.mkd(dir)
+                    ftp.cwd(dir)
+
+            if package_name not in ftp.nlst():
+                ftp.mkd(package_name)
+
+            ftp.cwd(package_name)
+
+            file = open(package_path, "rb")
+            ftp.storbinary('STOR ' + os.path.basename(package_path), file)
+            file.close()
+
+        finally:
+            ftp.quit()
+
+
+    packages = get_packages_names()
+
+    if len(packages) == 0:
+        raise ValueError("Not uploading: no package recodnized")
+
+    if not getattr(options, "version_str", None):
+        call_task("compute_version")
+
+    print u"Uploading packages %s" % packages
+    for package_name in packages:
+        package_path = get_package_path(package_name, options.name, current_version=options.version_str)
+        upload_package(options.ftp_host, options.ftp_user, options.ftp_password, \
+            options.ftp_directory.split("/"), package_path, package_name, port=getattr(options, "ftp_port", 21))
 
 @task
 @needs(['replace_version', 'update_debian_version', 'build_debian_package'])
-#@cmdopts([
-#    ('without-upload', 'w', 'Do not call upload_debian_package'),
-#])
+@cmdopts([
+    ('upload-ftp', 'f', 'Upload packages to FTP server'),
+])
 def create_debian_package(options):
     pass
 #    if options.without_upload:

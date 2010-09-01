@@ -1,2 +1,6 @@
 pyparsing
 argparse
+
+# testing deps
+pyftpdlib
+
