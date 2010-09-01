@@ -4,5 +4,6 @@ nbproject
 /cached_repositories.ini
 /include
 /lib*
-
+*.egg-info
 *~
+
