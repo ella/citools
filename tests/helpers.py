@@ -270,4 +270,4 @@ try:
             self.join()
 
 except ImportError:
-    raise
+    pass
