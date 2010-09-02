@@ -195,6 +195,34 @@ def update_debianization(version):
         raise ValueError("Updating debianization failed with exit code %s" % return_code)
 
 
+def get_packages_names():
+    control = os.path.join('debian', 'control')
+    if not os.path.exists(control):
+        raise ValueError("Cannot find debian/control")
+    packages = []
+    version_pattern = re.compile("^(Package\:){1}(\s)*(?P<name>[\w\-\.]+).*(\s)*$")
+    for line in open(control, 'r'):
+        match = re.match(version_pattern, line)
+        if match:
+            packages.append(match.groupdict()['name'])
+    return packages
+
+
+def get_package_path(package_name, module_name, current_version=None):
+    """ Return filesystem path to debian package build by bdist_deb"""
+    if not current_version:
+        #FIXME: not to hardcode
+        format = "%s-[0-9]*" % module_name
+        current_version = '.'.join(map(str, compute_version(get_git_describe(accepted_tag_pattern=format))))
+    package_name = u"%(name)s_%(version)s_%(arch)s.deb" % {
+        'name' : package_name,
+        'version' : current_version,
+        'arch' : 'all'
+    }
+    return os.path.normpath(os.path.join(os.curdir, os.pardir, package_name))
+
+
+
 class UpdateDebianVersion(Command):
 
     description = "copy version string to debian changelog"

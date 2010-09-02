@@ -93,6 +93,17 @@ class TestFtpUploadFunctions(DebianPackageTestCase):
 
         self.assertTrue(os.path.exists(os.path.join(self.ftp_home, "test", "nested", "directories", "python-exproject", "python-exproject_3.3.0_all.deb")))
 
+#    def test_package_creation_accepts_upload(self):
+#        check_call([
+#            'paver', 'create_debian_package',
+#            '--upload-ftp',
+#            '--ftp-host=%s' % self.server.host, '--ftp-port=%s' % self.server.port,
+#            '--ftp-user=%s' % self.username, '--ftp-password=%s' % self.password,
+#            '--ftp-directory=test/nested/directories'
+#        ])
+#
+#        self.assertTrue(os.path.exists(os.path.join(self.ftp_home, "test", "nested", "directories", "python-exproject", "python-exproject_3.3.0_all.deb")))
+
     def tearDown(self):
         self.server.stop()
         rmtree(self.ftp_home)
