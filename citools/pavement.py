@@ -201,3 +201,18 @@ def create_debian_package(options):
     pass
 #    if getattr(options, "upload_ftp", None):
 #        call_task(upload_debian_package(options))
+
+@task
+@cmdopts([
+    ('host=', 'o', 'Buildmaster hostname'),
+    ('port=', 'p', 'Buildmaster port'),
+    ('branch=', 'b', 'Branch with change'),
+])
+def ping_buildmaster():
+    from citools.buildbots import buildbot_ping_git
+    from citools.version import retrieve_current_branch
+
+    if not getattr(options, "branch", None):
+        options.branch = retrieve_current_branch()
+
+    buildbot_ping_git(options.host, int(options.port), options.branch)
