@@ -155,7 +155,7 @@ class PaverTestCase(TestCase):
 
         try:
             check_call(['git', '--help'], stdout=PIPE, stderr=PIPE)
-        except CalledProcessError:
+        except (CalledProcessError, OSError):
             raise SkipTest("git must be available and in $PATH in order to preform this test")
 
         self.holder = mkdtemp(prefix='test-repository-')
