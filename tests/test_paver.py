@@ -43,7 +43,7 @@ class DebianPackageTestCase(PaverTestCase):
 
         try:
             check_call(['dpkg-buildpackage', '--help'], stdout=PIPE, stderr=PIPE)
-        except CalledProcessError:
+        except (CalledProcessError, OSError):
             raise SkipTest("This test must run on debian with buildpackage installed")
 
         check_call(['git', 'tag', '-a', 'exproject-3.3', '-m', '"Tagging"'])

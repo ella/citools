@@ -124,4 +124,5 @@ def bootstrap():
 @needs('install_dependencies')
 def prepare():
     """ Prepare complete environment """
+    sh("python setup.py develop")
 
