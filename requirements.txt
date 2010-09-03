@@ -1,5 +1,6 @@
 pyparsing
 argparse
+Paver >= 1.0.3
 
 # testing deps
 pyftpdlib
