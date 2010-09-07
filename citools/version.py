@@ -6,6 +6,7 @@ from popen2 import Popen3
 from subprocess import Popen, PIPE
 from tempfile import mkdtemp
 
+from urlparse import urlsplit
 from citools.git import fetch_repository
 
 """
@@ -225,7 +226,7 @@ def retrieve_current_branch(fix_environment=False, repository_directory=None, **
                 del os.environ['GIT_DIR']
 
 
-def compute_meta_version(dependency_repositories, workdir=None, accepted_tag_pattern=None):
+def compute_meta_version(dependency_repositories, workdir=None, accepted_tag_pattern=None, cachedir=None):
 
     kwargs = {}
 
@@ -251,7 +252,23 @@ def compute_meta_version(dependency_repositories, workdir=None, accepted_tag_pat
             branch = repository_dict['branch']
         else:
             branch = meta_branch
-        workdir = fetch_repository(repository_dict['url'], branch=branch, workdir=repositories_dir)
+
+        reference_repository = None
+
+        if cachedir:
+            reponame = urlsplit(repository_dict['url'])[2].split("/")[-1]
+            if reponame.endswith(".git"):
+                cachename = reponame[:-4]
+            else:
+                cachename = reponame
+
+            if os.path.exists(os.path.join(cachedir, cachename)):
+                reference_repository = os.path.abspath(os.path.join(cachedir, cachename))
+                
+            elif os.path.exists(os.path.join(cachedir, cachename+".git")):
+                reference_repository = os.path.abspath(os.path.join(cachedir, cachename+".git"))
+
+        workdir = fetch_repository(repository_dict['url'], branch=branch, workdir=repositories_dir, reference_repository=reference_repository)
         # this is pattern for dependency repo, NOT for for ourselves -> pattern of it, not ours
         # now hardcoded, but shall be retrieved via egg_info or custom command
         project_pattern = "%s-[0-9]*" % repository_dict['package_name']
@@ -264,13 +281,14 @@ class GitSetMetaVersion(config):
     description = "calculate and set version from all dependencies"
 
     user_options = [
+        ("cache-directory=", None, "Directory where dependent repositories are cached in"),
     ]
 
     def initialize_options(self):
-        pass
+        self.cache_directory = None
 
     def finalize_options(self):
-        pass
+        self.cache_directory = self.cache_directory or None
 
     def run(self):
         """
@@ -280,7 +298,7 @@ class GitSetMetaVersion(config):
         """
         try:
             format = "%s-[0-9]*" % self.distribution.metadata.get_name()
-            meta_version = compute_meta_version(self.distribution.dependencies_git_repositories, accepted_tag_pattern=format)
+            meta_version = compute_meta_version(self.distribution.dependencies_git_repositories, accepted_tag_pattern=format, cachedir=self.cache_directory)
 
             version = meta_version
             version_str = '.'.join(map(str, version))

@@ -12,7 +12,7 @@ log = logging.getLogger("citools.git")
 
 from distutils.core import Command
 
-def fetch_repository(repository, workdir=None, branch=None, cache_config_dir=None, cache_config_file_name="cached_repositories.ini"):
+def fetch_repository(repository, workdir=None, branch=None, cache_config_dir=None, cache_config_file_name="cached_repositories.ini", reference_repository=None):
     """
     Fetch repository inside a workdir. Return filesystem path of newly created dir.
     if cache_config_dir is False, no attempt to use caching is used. If None, curdir is used, if string, it's taken as path to directory.
@@ -40,15 +40,17 @@ def fetch_repository(repository, workdir=None, branch=None, cache_config_dir=Non
 
     #HACK: I'm now aware about some "generate me temporary dir name" function,
     # so I'll make this create/remove workaround - patch welcomed ,)
-    dir = os.path.abspath(mkdtemp(dir=workdir))
+    dir = os.path.abspath(os.path.join(mkdtemp(dir=workdir), "repository"))
 
-    if not branch:
-        branch="master"
+    clone = ["git", "clone", repository, dir]
 
-    check_call(["git", "init"], cwd=dir, stdout=PIPE, stdin=PIPE, stderr=PIPE)
-    check_call(["git", "remote", "add", "origin", repository], cwd=dir, stdout=PIPE, stdin=PIPE, stderr=PIPE)
-    check_call(["git", "fetch"], cwd=dir, stdout=PIPE, stdin=PIPE, stderr=PIPE)
-    check_call(["git", "checkout", "-b", branch, "origin/%s" % branch], cwd=dir, stdout=PIPE, stdin=PIPE, stderr=PIPE)
+    if reference_repository and os.path.exists(reference_repository):
+        clone.extend(["--reference", reference_repository])
+
+    check_call(clone, stdout=PIPE, stdin=PIPE, stderr=PIPE)
+
+    if branch and branch != "master":
+        check_call(["git", "checkout", "-b", branch, "origin/%s" % branch], cwd=dir, stdout=PIPE, stdin=PIPE, stderr=PIPE)
 
     if write_repository_cache:
         if not parser.has_section(repository):
