@@ -33,6 +33,12 @@ setup(
 
     include_package_data = True,
 
+#    buildbot_meta_master = {
+#        'host' : 'cnt-buildmaster.dev.chservices.cz',
+#        'port' : 9996,
+#        'branch' : 'master',
+#    },
+
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
@@ -46,6 +52,23 @@ setup(
         'console_scripts': [
             'citools = citools.main:main',
             'cthulhubot_force_build = citools.cthulhubot:force_build',
+        ],
+        'distutils.commands' : [
+            'compute_version_git = citools.version:GitSetVersion',
+            'compute_version_meta_git = citools.version:GitSetMetaVersion',
+            'create_debianization = citools.debian:CreateDebianization',
+            'update_debian_version = citools.debian:UpdateDebianVersion',
+            'create_debian_package = citools.debian:CreateDebianPackage',
+            'create_debian_meta_package = citools.debian:CreateDebianMetaPackage',
+            'bdist_deb = citools.debian:BuildDebianPackage',
+            'update_dependency_versions = citools.debian:UpdateDependencyVersions',
+            'copy_dependency_images = citools.build:CopyDependencyImages',
+            'buildbot_ping_git = citools.buildbots:BuildbotPingGit',
+            'save_repository_information_git = citools.git:SaveRepositoryInformationGit',
+        ],
+        "distutils.setup_keywords": [
+            "dependencies_git_repositories = citools.version:validate_repositories",
+            "buildbot_meta_master = citools.buildbots:validate_meta_buildbot",
         ],
     },
     install_requires = [
