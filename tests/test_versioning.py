@@ -9,7 +9,8 @@ from tempfile import mkdtemp
 
 from citools.version import (
     compute_version, get_git_describe, replace_version, compute_meta_version,
-    sum_versions, fetch_repository
+    sum_versions, fetch_repository,
+    get_highest_tag
 )
 
 class TestVersioning(TestCase):
@@ -181,10 +182,10 @@ class TestGitVersionRetrieving(TestCase):
             expected_result_start='project-0.1-1')
 
     def tearDown(self):
-        TestCase.tearDown(self)
         # delete temporary repository and restore ENV vars after update
         rmtree(self.repo)
         os.chdir(self.oldcwd)
+        TestCase.tearDown(self)
 
 class TestMetaRepository(TestCase):
 
@@ -345,3 +346,85 @@ class TestVersionNumberManipulations(TestCase):
         self.assertRaises(ValueError, sum_versions, (-1, 2, 3), (0, 128, 0))
 
 
+class TestVersionRetrievingHigherVersion(TestCase):
+
+    def prepare(self):
+        # create temporary directory and initialize git repository there
+        self.repo = mkdtemp(prefix='test_git_')
+        self.oldcwd = os.getcwd()
+        
+        os.chdir(self.repo)
+        proc = Popen(['git', 'init'], stdout=PIPE, stderr=PIPE)
+        proc.wait()
+        self.assertEquals(0, proc.returncode)
+
+        # also setup dummy name / email for this repo for tag purposes
+        proc = Popen(['git', 'config', 'user.name', 'dummy-tester'])
+        proc.wait()
+        self.assertEquals(0, proc.returncode)
+        proc = Popen(['git', 'config', 'user.email', 'dummy-tester@example.com'])
+        proc.wait()
+        self.assertEquals(0, proc.returncode)
+
+
+#        o
+#        | \
+#        o  o (repo-1.1)
+#        |
+#        o (repo-1.2)
+
+        f = open(os.path.join(self.repo, 'test.txt'), 'wb')
+        f.write("test")
+        f.close()
+
+        check_call(["git", "add", "*"])
+        check_call(['git', 'commit', '-m', '"dummy"'], stdout=PIPE, stderr=PIPE)
+        check_call(['git', 'tag', '-m', '"tagging"', '-a', "repo-1.2"], stdout=PIPE, stderr=PIPE)
+
+        f = open(os.path.join(self.repo, 'test.txt'), 'wb')
+        f.write("testitytest")
+        f.close()
+
+        check_call(['git', 'commit', '-a', '-m', '"1.2.1"'], stdout=PIPE, stderr=PIPE)
+
+        f = open(os.path.join(self.repo, 'test.txt'), 'wb')
+        f.write("testitytestitytest")
+        f.close()
+
+        check_call(['git', 'checkout', '-b', 'branch'], stdout=PIPE, stderr=PIPE)
+
+        f = open(os.path.join(self.repo, 'test.txt'), 'wb')
+        f.write("refactority refactor")
+        f.close()
+
+        check_call(['git', 'commit', '-a', '-m', '"1.1"'], stdout=PIPE, stderr=PIPE)
+        check_call(['git', 'tag', '-m', '"tagging"', '-a', "repo-1.1"], stdout=PIPE, stderr=PIPE)
+
+        check_call(['git', 'checkout', 'master'], stdout=PIPE, stderr=PIPE)
+
+        f = open(os.path.join(self.repo, 'testit.txt'), 'wb')
+        f.write("new shiny thingie")
+        f.close()
+
+        check_call(["git", "add", "testit.txt"])
+        check_call(['git', 'commit', '-m', '"Thingie!"'], stdout=PIPE, stderr=PIPE)
+
+        check_call(['git', 'merge', 'branch'], stdout=PIPE, stderr=PIPE)
+
+    
+    def test_higher_version_always_preferred(self):
+        """
+        Check we're retrieving "higher" version, meaning number of tags since higher version tag,
+        unlike git describe which is prefferring tag that has lower number of commits to current HEAD.
+        """
+        try:
+            self.prepare()
+            self.assertEquals((1, 2, 4), compute_version(
+                get_git_describe(repository_directory=self.repo, fix_environment=True, accepted_tag_pattern='repo-*')
+            ))
+        finally:
+            rmtree(self.repo)
+            os.chdir(self.oldcwd)
+
+    def test_highest_tag_retrieved(self):
+        self.assertEquals('citools-0.4', get_highest_tag(['citools-0.3.520', 'citools-0.2', 'citools-0.4']))

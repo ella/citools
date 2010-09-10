@@ -3,7 +3,7 @@ from distutils.command.config import config
 import re
 import os
 from popen2 import Popen3
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, check_call, CalledProcessError
 from tempfile import mkdtemp
 
 from urlparse import urlsplit
@@ -17,9 +17,11 @@ n is then computed as number-of-commits since last version-setting tag (and we'r
 using git describe for it now)
 """
 
+DEFAULT_TAG_VERSION = (0, 0)
+
 def compute_version(string):
     """ Return VERSION tuple, computed from git describe output """
-    match = re.match("(?P<bordel>[a-z0-9\-\_]*)(?P<arch>\d+\.\d+)(?P<rest>.*)", string)
+    match = re.match("(?P<bordel>[a-z0-9\-\_\/]*)(?P<arch>\d+\.\d+)(?P<rest>.*)", string)
 
     if not match or not match.groupdict().has_key('arch'):
         raise ValueError(u"String %s should be a scheme version, but it's not; failing" % str(string))
@@ -70,8 +72,87 @@ def sum_versions(version1, version2):
     return tuple(final_version)
 
 
-def get_git_describe(fix_environment=False, repository_directory=None, accepted_tag_pattern=None):
-    """ Return output of git describe. If no tag found, initial version is considered to be 0.0.1 """
+def get_git_revlist_tags(commit="HEAD"):
+    p = Popen(["git", "rev-list", "--simplify-by-decoration", "--pretty=format:%d", commit], stdout=PIPE, stderr=PIPE)
+    stdout = p.communicate()[0]
+    if p.returncode == 0:
+        return stdout.strip()
+    else:
+        return ''
+
+def get_tags_from_current_branch(revlist_output, accepted_tag_pattern):
+    lines = revlist_output.splitlines()
+
+    revlist_tag_pattern = re.compile("^\ \(tag\:\ (.*)\)$")
+    tags = []
+    # we could rely in line % 2 ? 0, but bad newline would mess up whole process,
+    # so just be simple and forgiving
+    for line in lines:
+        if not line.startswith("commit: "):
+            tag = revlist_tag_pattern.match(line)
+            if tag:
+                tag = tag.groups()[0]
+                # now here is the thing: user provides accepted_tag_pattern in non-pythonic,
+                # git, shell-like syntax. Not to force user to provide details, we'll just
+                # validate it by running git.
+                # TODO: This may be optimized in future (shell module?), patches welcomed
+                proc = Popen(['git', 'describe', '--match=%s' % accepted_tag_pattern, tag], stdout=PIPE, stderr=PIPE)
+                verified_tag = proc.communicate()[0].strip()
+
+                if proc.returncode == 0 and tag == verified_tag:
+                    tags.append(tag)
+    return tags
+
+
+def get_highest_version(versions):
+    """
+    Get highest version for version slice strings
+    (3, 0) > (2, 2, 3) > (1, 155) > (1, 1) > (1, 0, 234, 3890)
+    """
+    current_slice = 0
+
+    if len(versions) < 1:
+        return DEFAULT_TAG_VERSION
+
+    while len(versions) > 1:
+        slice_map = dict([(v[current_slice], v) for v in versions if len(v) >= current_slice+1])
+        slice_vers = slice_map.keys()
+        slice_vers.sort()
+        highest = slice_vers[-1]
+
+        versions = [v for v in versions if v[current_slice] == highest]
+
+        if len(versions) < 1:
+            raise NotImplementedError()
+
+        current_slice += 1
+
+    return versions[0]
+
+
+def get_highest_tag(tag_list):
+    """
+    Return highest tag from given git describe output tags
+    """
+    version_map = {}
+    for i in tag_list:
+        try:
+            version_map[compute_version(i)] = i
+        except ValueError:
+            # bad i format -> shall not be considered
+            pass
+
+    return version_map[get_highest_version(version_map.keys())]
+    
+
+def get_git_describe(fix_environment=False, repository_directory=None, accepted_tag_pattern=None, prefer_highest_version=True):
+    """
+    Return output of git describe. If no tag found, initial version is considered to be 0.0
+
+    accepted_tag_pattern is used to filter tags only to 'project numbering ones'.
+
+    if accepted_tag_given, prefer_hightest_version may be used. This will prefer tags matching accepted_tag_pattern, but with
+    """
     if repository_directory and not fix_environment:
         raise ValueError("Both fix_environment and repository_directory or none of them must be given")
     
@@ -84,11 +165,37 @@ def get_git_describe(fix_environment=False, repository_directory=None, accepted_
 
         os.environ['GIT_DIR'] = os.path.join(repository_directory, '.git')
 
+    # git describe fails for us
+
 
     command = ["git", "describe"]
 
     if accepted_tag_pattern is not None:
-        command.append('--match="%s"' % accepted_tag_pattern)
+        if not prefer_highest_version:
+            command.append('--match="%s"' % accepted_tag_pattern)
+        else:
+            # git describe fails us on layout similar to:
+            #        o
+            #        | \
+            #        o  o (repo-1.1)
+            #        |
+            #        o (repo-1.2)
+            # where repo-1.1-1-<hash> will be reported, while we're interested in 1.2-2-<hash>
+
+            # to work around this, we will find "highest" tag matching accepted_tag_patterns and use it
+            # as a tag pattern for git describe output
+            available_tags = get_tags_from_current_branch(
+                revlist_output=get_git_revlist_tags(),
+                accepted_tag_pattern=accepted_tag_pattern
+            )
+
+            # if not tag available, just use default
+            if len(available_tags) < 1:
+                pattern = accepted_tag_pattern
+            else:
+                pattern = get_highest_tag(available_tags)
+
+            command.append('--match="%s"' % pattern)
 
     try:
         proc = Popen(' '.join(command), stdout=PIPE, stderr=PIPE, shell=True)
@@ -98,7 +205,7 @@ def get_git_describe(fix_environment=False, repository_directory=None, accepted_
             return stdout.strip()
 
         elif proc.returncode == 128:
-            return '0.0'
+            return '.'.join(map(str, DEFAULT_TAG_VERSION))
 
         else:
             raise ValueError("Unknown return code %s" % proc.returncode)
