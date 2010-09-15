@@ -3,6 +3,7 @@ Tools related to backup handling (download, restore etc.)
 """
 
 import os
+from subprocess import call
 from shutil import rmtree
 import tarfile
 from tempfile import mkdtemp
@@ -29,7 +30,7 @@ class Backuper(object):
 
     def get_http_backup(self, *args, **kwargs):
         return self.get_https_backup(*args, **kwargs)
-    
+
     def get_https_backup(self, tmpdir):
         auth_handler = urllib2.HTTPBasicAuthHandler()
         auth_handler.add_password(realm=self.get_option("realm"),
@@ -53,6 +54,14 @@ class Backuper(object):
         backupdir = os.path.dirname(file)
         if file.endswith(".sql"):
             return file
+
+        # determine compressed plain file
+        if file.endswith("sql.gz"):
+            call(["gzip", "-d", file])
+            return file[:-3]
+        if file.endswith("sql.bz2"):
+            call(["bzip2", "-d", file])
+            return file[:-4]
 
         # determine archive
         if file.endswith("tar.bz2"):
