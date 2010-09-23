@@ -2,7 +2,7 @@
 Database handling stuff
 """
 
-import subprocess
+from subprocess import Popen
 
 class Database(object):
     """
@@ -20,19 +20,16 @@ class Database(object):
 
 
     def execute_script(self, script):
-        f = open(script, "r+b")
-        proc = subprocess.Popen(' '.join([
+        proc = Popen(' '.join([
                 'mysql',
                 '--user=%s'% self.username,
-                '--password=%s'% self.password,
-                self.dbname
+                '--password="%s"'% self.password,
+                self.dbname,
+                '<',
+                script
             ]),
-            shell=True,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
+            shell=True
         )
-        proc.stdin.writelines(f)
         proc.communicate()
-        f.close()
         assert proc.returncode == 0
 

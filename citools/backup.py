@@ -8,6 +8,7 @@ import tarfile
 from subprocess import check_call
 from shutil import rmtree
 from tempfile import mkdtemp
+from ConfigParser import NoOptionError
 
 from citools.db import Database
 
@@ -25,7 +26,10 @@ class Backuper(object):
         self.config = config
 
     def get_option(self, option):
-        return self.config.get(self.CONFIG_SECTION, option)
+        try:
+            return self.config.get(self.CONFIG_SECTION, option)
+        except NoOptionError:
+            return None
 
 
     def get_http_backup(self, *args, **kwargs):
@@ -94,7 +98,10 @@ class Backuper(object):
             raise ValueError("After all our backup handling, file %s do not end with sql :-(" % sqlfile)
 
     def get_backup(self):
-        self.tmpdir = tmpdir = mkdtemp()
+        if self.get_option('tempdir'):
+            self.tmpdir = tmpdir = mkdtemp(prefix=self.get_option('tempdir'))
+        else:
+            self.tmpdir = tmpdir = mkdtemp()
         protocol = self.get_option("uri").split(':')[0]
         if protocol not in self.SUPPORTED_PROTOCOLS:
             raise ValueError("Protocol %s not supported" % protocol)
