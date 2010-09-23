@@ -3,11 +3,11 @@ Tools related to backup handling (download, restore etc.)
 """
 
 import os
-from subprocess import call
-from shutil import rmtree
-import tarfile
-from tempfile import mkdtemp
 import urllib2
+import tarfile
+from subprocess import check_call
+from shutil import rmtree
+from tempfile import mkdtemp
 
 from citools.db import Database
 
@@ -57,10 +57,10 @@ class Backuper(object):
 
         # determine compressed plain file
         if file.endswith("sql.gz"):
-            call(["gzip", "-d", file])
+            check_call(["gzip", "-d", file])
             return file[:-3]
         if file.endswith("sql.bz2"):
-            call(["bzip2", "-d", file])
+            check_call(["bzip2", "-d", file])
             return file[:-4]
 
         # determine archive
