@@ -3,6 +3,7 @@ Database handling stuff
 """
 
 from subprocess import Popen
+from ConfigParser import NoOptionError
 
 
 class Database(object):
@@ -25,7 +26,10 @@ class Database(object):
             self.dbs[s]['dbname'] = config.get(s, 'name')
             self.dbs[s]['username'] = config.get(s, 'username')
             self.dbs[s]['password'] = config.get(s, 'password')
-            self.dbs[s]['file'] = config.get(s, 'file')
+            try:
+                self.dbs[s]['file'] = config.get(s, 'file')
+            except NoOptionError, e:
+                self.dbs[s]['file'] = "%s.sql" % config.get(s, 'name')
 
     def execute_scripts(self):
         for s in self.dbs.keys():
