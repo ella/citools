@@ -19,18 +19,27 @@ class Backuper(object):
 
     SUPPORTED_PROTOCOLS = ["http", "https"]
     CONFIG_SECTION = "backup"
+    CONFIG_DB_SECTION = "database"
 
     def __init__(self, config):
         super(Backuper, self).__init__()
 
         self.config = config
+        self.db_sections = []
+
+        for s in self.config.parser.sections():
+            if s.startswith(self.CONFIG_DB_SECTION):
+                self.db_sections.append(s)
+
+        if len(self.db_sections) == 0:
+            raise NoOptionError("No database settings in configuration file.")
+
 
     def get_option(self, option):
         try:
             return self.config.get(self.CONFIG_SECTION, option)
         except NoOptionError:
             return None
-
 
     def get_http_backup(self, *args, **kwargs):
         return self.get_https_backup(*args, **kwargs)
@@ -76,26 +85,29 @@ class Backuper(object):
         else:
             raise ValueError("File %s is not a valid archive (.tar.gz|bz2)" % file)
 
+        db_files = []
+        for s in self.db_sections:
+            db_files.append(self.config.get(s, "file"))
+
         # uncompress
         archive = tarfile.open(file, flag)
-        sqlfile = None
+        sqlfiles = []
         for tarinfo in archive:
-            if tarinfo.name == self.get_option("file"):
+            if tarinfo.name in db_files:
                 archive.extract(tarinfo, backupdir)
-                sqlfile = os.path.join(backupdir, tarinfo.name)
+                sqlfiles.append(os.path.join(backupdir, tarinfo.name))
 
         archive.close()
 
-        if not sqlfile:
+        if len(sqlfiles) == 0:
             raise ValueError("Backup file %s not found in archive" % self.get_option("file"))
         else:
-            assert os.path.exists(sqlfile)
+            for f in sqlfiles:
+                assert os.path.exists(f)
+                assert f.endswith(".sql")
 
-        # check & returns
-        if sqlfile.endswith(".sql"):
-            return sqlfile
-        else:
-            raise ValueError("After all our backup handling, file %s do not end with sql :-(" % sqlfile)
+        # returns
+        return sqlfiles
 
     def get_backup(self):
         if self.get_option('tempdir'):
@@ -107,7 +119,7 @@ class Backuper(object):
             raise ValueError("Protocol %s not supported" % protocol)
         else:
             backupfile = getattr(self, "get_%s_backup" % protocol)(tmpdir=tmpdir)
-            self.backup_file = self.get_backup_sql(backupfile)
+            self.backup_files = self.get_backup_sql(backupfile)
 
     def clean_backup(self):
         # and delete temporary dir
@@ -118,5 +130,7 @@ class Backuper(object):
         return 0
 
     def restore_backup(self):
-        db = Database(config=self.config)
-        return db.execute_script(self.backup_file)
+        db = Database(config=self.config, db_sections=self.db_sections, tmpdir=self.tmpdir)
+
+        return db.execute_scripts()
+        #return db.execute_script(self.backup_files)

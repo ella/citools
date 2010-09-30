@@ -4,29 +4,41 @@ Database handling stuff
 
 from subprocess import Popen
 
+
 class Database(object):
     """
     Represents configured database backend. Wrapper to handle cases when
     Django's settings are not available.
     """
 
-    def __init__(self, config):
+    CONFIG_DB_SECTION = "database"
+
+    def __init__(self, config, db_sections=[], tmpdir=''):
         super(Database, self).__init__()
 
-        self.backend = "mysql"
-        self.username = config.get("database", "username")
-        self.password = config.get("database", "password")
-        self.dbname = config.get("database", "name")
+        self.config = config
+        self.tmpdir = tmpdir
 
+        self.dbs = {}
+        for s in db_sections:
+            self.dbs[s] = {}
+            self.dbs[s]['dbname'] = config.get(s, 'name')
+            self.dbs[s]['username'] = config.get(s, 'username')
+            self.dbs[s]['password'] = config.get(s, 'password')
+            self.dbs[s]['file'] = config.get(s, 'file')
 
-    def execute_script(self, script):
+    def execute_scripts(self):
+        for s in self.dbs.keys():
+            self.execute_script(self.dbs[s])
+
+    def execute_script(self, section):
         proc = Popen(' '.join([
                 'mysql',
-                '--user=%s'% self.username,
-                '--password="%s"'% self.password,
-                self.dbname,
+                '--user=%s' % section['username'],
+                '--password="%s"' % section['password'],
+                section['dbname'],
                 '<',
-                script
+                "%s/%s" % (self.tmpdir, section['file'])
             ]),
             shell=True
         )
