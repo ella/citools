@@ -56,21 +56,45 @@ Testing
 Working with databases
 ----------------------------
 
-Downloading backup::
+Downloading and restoring backup::
 
     [backup]
-    realm = "backuprealm"
-    username = blah
-    password = xxx
-    file = my/database/backup/db.sql
-    uri = https://my.backup.server.cz/my/dir/backup_archive.tar.gz
+    realm=backuprealm
+    username=blah
+    password=xxx
+    uri=https://my.backup.server.cz/my/dir/backup_archive.tar.gz
+	tempdir=/if/you/need/bigger/tempdir/to/unpack/archive/
 
     [database]
-    name = dbname
-    username = buildbot
-    password = xxx
+    file=my/database/backup/db.sql
+    name=dbname
+    username=buildbot
+    password=xxx
 
     citools -c /etc/$project/citools.ini db_restore
+
+Supported backup formats are ``.tar.gz|bz2``, ``.sql.gz|bz2`` and plain ``.sql``.
+When you use tar archive with more databases, you can restore more databases
+at once, if you define more sections with prefix ``database`` in your ini config file::
+
+	[backup]
+	realm=myrealm
+	username=blah
+	password=xxx
+	uri=https://my.backup.server.cz/my/dir/backup_archive.tar.gz
+	tempdir=/if/you/need/bigger/tempdir/to/unpack/archive/
+
+	[database_first]
+	file=path/in/tarfile/database_first.sql
+	name=database_first
+	username=firstman
+	password=""
+
+	[database_second]
+	file=path/in/tarfile/database_second.sql
+	name=database_second
+	username=secondman
+	password=xxx
 
 when run as setup.py db_restore, /etc/$project/citools.ini is the default
 
