@@ -181,7 +181,7 @@ def upload_debian_package(options):
     packages = get_packages_names()
 
     if len(packages) == 0:
-        raise ValueError("Not uploading: no package recodnized")
+        raise ValueError("Not uploading: no package recognized")
 
     if not getattr(options, "version_str", None):
         call_task("compute_version")
