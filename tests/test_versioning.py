@@ -368,7 +368,7 @@ class TestParsingRevlistOutput(TestCase):
 
 class TestVersionRetrievingHigherVersion(TestCase):
 
-    def prepare(self):
+    def prepare(self, tag_latest_version=False):
         # create temporary directory and initialize git repository there
         self.repo = mkdtemp(prefix='test_git_')
         self.oldcwd = os.getcwd()
@@ -431,6 +431,17 @@ class TestVersionRetrievingHigherVersion(TestCase):
 
         check_call(['git', 'merge', 'branch'], stdout=PIPE, stderr=PIPE)
 
+        if tag_latest_version:
+
+            # changes layout to
+            #        o (repo-1.3, HEAD)
+            #        | \
+            #        o  o (repo-1.1)
+            #        |
+            #        o (repo-1.2)
+
+            check_call(['git', 'tag', '-m', '"tagging"', '-a', "repo-1.3"], stdout=PIPE, stderr=PIPE)
+
     
     def test_higher_version_always_preferred(self):
         """
@@ -440,6 +451,19 @@ class TestVersionRetrievingHigherVersion(TestCase):
         try:
             self.prepare()
             self.assertEquals((1, 2, 4), compute_version(
+                get_git_describe(repository_directory=self.repo, fix_environment=True, accepted_tag_pattern='repo-*')
+            ))
+        finally:
+            rmtree(self.repo)
+            os.chdir(self.oldcwd)
+
+    def test_higher_version_preferred_even_when_tag_is_on_top_of_the_tree(self):
+        """
+        As previous test, but some git versions change their output when tagged version is also HEAD
+        """
+        try:
+            self.prepare(tag_latest_version=True)
+            self.assertEquals((1, 3, 0), compute_version(
                 get_git_describe(repository_directory=self.repo, fix_environment=True, accepted_tag_pattern='repo-*')
             ))
         finally:
