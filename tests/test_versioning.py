@@ -10,7 +10,7 @@ from tempfile import mkdtemp
 from citools.version import (
     compute_version, get_git_describe, replace_version, compute_meta_version,
     sum_versions, fetch_repository,
-    get_highest_tag
+    get_highest_tag, get_tags_from_line
 )
 
 class TestVersioning(TestCase):
@@ -345,6 +345,26 @@ class TestVersionNumberManipulations(TestCase):
     def test_sum_bad_number_in_first_version(self):
         self.assertRaises(ValueError, sum_versions, (-1, 2, 3), (0, 128, 0))
 
+class TestParsingRevlistOutput(TestCase):
+    def test_single_tag_parsed(self):
+        self.assertEquals(['repo-1.2'], get_tags_from_line(' (repo-1.2)'))
+
+    def test_multiple_tags_or_branches_parsed(self):
+        self.assertEquals(['repo-1.1', 'branch'], get_tags_from_line(' (repo-1.1, branch)'))
+
+    def test_multiple_tags_or_heads_parsed(self):
+        self.assertEquals(['HEAD', 'master'], get_tags_from_line(' (HEAD, master)'))
+
+    def test_multiple_tags_in_alternative_form_or_branches_parsed(self):
+        self.assertEquals(['repo-1.2', 'origin/master'], get_tags_from_line(' (tag: repo-1.2, origin/master)'))
+
+#commit 57242af1e05022103623780b66339346b7be4da9
+# (HEAD, master)
+#commit 4c0eaacf31f5ad13f56c4c21312f1719b0f04073
+# (repo-1.1, branch)
+#commit 3f989c837348ffaa5c7ff2fc8ebfef70cd0cf59c
+# (repo-1.2)
+
 
 class TestVersionRetrievingHigherVersion(TestCase):
 
@@ -428,3 +448,4 @@ class TestVersionRetrievingHigherVersion(TestCase):
 
     def test_highest_tag_retrieved(self):
         self.assertEquals('citools-0.4', get_highest_tag(['citools-0.3.520', 'citools-0.2', 'citools-0.4']))
+

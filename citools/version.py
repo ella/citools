@@ -19,6 +19,8 @@ using git describe for it now)
 
 DEFAULT_TAG_VERSION = (0, 0)
 
+REVLIST_TAG_PATTERN = re.compile("^\ \((.*)\)$")
+
 def compute_version(string):
     """ Return VERSION tuple, computed from git describe output """
     match = re.match("(?P<bordel>[a-z0-9\-\_\/]*)(?P<arch>\d+\.\d+)(?P<rest>.*)", string)
@@ -80,18 +82,33 @@ def get_git_revlist_tags(commit="HEAD"):
     else:
         return ''
 
+def get_tags_from_line(tagline):
+    tags = []
+    tagline = REVLIST_TAG_PATTERN.match(tagline)
+    if tagline:
+        line = tagline.groups()[0]
+        if ', ' in line:
+            candidates = line.split(', ')
+        else:
+            candidates = [line]
+
+        for candidate in candidates:
+            prefixes_to_strip = ['tag: ']
+            for prefix in prefixes_to_strip:
+                if candidate.startswith(prefix):
+                    candidate = candidate[len(prefix):]
+            tags.append(candidate)
+    return tags
+
 def get_tags_from_current_branch(revlist_output, accepted_tag_pattern):
     lines = revlist_output.splitlines()
 
-    revlist_tag_pattern = re.compile("^\ \(tag\:\ (.*)\)$")
     tags = []
     # we could rely in line % 2 ? 0, but bad newline would mess up whole process,
     # so just be simple and forgiving
     for line in lines:
         if not line.startswith("commit: "):
-            tag = revlist_tag_pattern.match(line)
-            if tag:
-                tag = tag.groups()[0]
+            for tag in get_tags_from_line(line):
                 # now here is the thing: user provides accepted_tag_pattern in non-pythonic,
                 # git, shell-like syntax. Not to force user to provide details, we'll just
                 # validate it by running git.
