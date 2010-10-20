@@ -1,5 +1,7 @@
 citools
 =========================================
 
-CI helper library, README available soon.
-Meanwhile, try to look in doc/ directory.
+Tools for helping continuous integration and delivery.
+
+Sphinx doc under docs/, or see
+http://readthedocs.org/projects/Almad/citools/docs/
