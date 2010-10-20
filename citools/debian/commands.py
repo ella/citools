@@ -280,16 +280,19 @@ class CreateDebianMetaPackage(Command):
     description = "run what's needed to build debian meta package"
 
     user_options = [
+        ('build-number=', None, "Provide a buildnumber for auto-computed version"),
     ]
 
     def initialize_options(self):
-        pass
+        self.build_number = None
 
     def finalize_options(self):
         pass
 
     def run(self):
         for cmd_name in self.get_sub_commands():
+            sub_cmd = self.reinitialize_command(cmd_name)
+            sub_cmd.build_number = self.build_number
             self.run_command(cmd_name)
 
     sub_commands = [
