@@ -228,18 +228,22 @@ class UpdateDebianVersion(Command):
     description = "copy version string to debian changelog"
 
     user_options = [
+        ('build-number=', None, "Provide a buildnumber for auto-computed version"),
     ]
 
     def initialize_options(self):
-        pass
+        self.build_number = None
 
     def finalize_options(self):
         pass
 
     def run(self):
         """ Compute current version and update debian version accordingly """
+        version = self.distribution.get_version()
+        if self.build_number:
+            version = '%s-%s' % (version, self.build_number)
         try:
-            update_debianization(self.distribution.get_version())
+            update_debianization(version)
         except Exception:
             import traceback
             traceback.print_exc()
@@ -249,16 +253,19 @@ class CreateDebianPackage(Command):
     description = "run what's needed to build debian package"
 
     user_options = [
+        ('build-number=', None, "Provide a buildnumber for auto-computed version"),
     ]
 
     def initialize_options(self):
-        pass
+        self.build_number = None
 
     def finalize_options(self):
         pass
 
     def run(self):
         for cmd_name in self.get_sub_commands():
+            sub_cmd = self.reinitialize_command(cmd_name)
+            sub_cmd.build_number = self.build_number
             self.run_command(cmd_name)
 
     sub_commands = [
