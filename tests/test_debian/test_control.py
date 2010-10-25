@@ -268,6 +268,27 @@ def test_upgrade_to_multicipher_version_passes_downgrade_check():
     cfile = ControlFile()
     assert_true(cfile.check_downgrade('0.5.0.0', '0.17.0.114'))
 
+
+debian_control = '''\
+Source: versioned-package
+Section: python
+Priority: optional
+Maintainer: John Doe <john@doe.com>
+Build-Depends: cdbs (>= 0.4.41), debhelper (>= 5.0.37.2), python-dev, python-support (>= 0.3), python-setuptools
+Standards-Version: 3.7.2
+
+Package: versioned-package
+Architecture: all
+Provides: versioned-package-%(version)s
+Description: package providing versioned slot
+'''
+
+def test_versioned_package_in_provides_replaced():
+    dc = debian_control % {'version' : '1.0.0.0'}
+    cfile = ControlFile(dc)
+
+    assert_equals([l.strip() for l in dc.splitlines()], [l.strip() for l in cfile.dump().splitlines()])
+
 ##############################################################################
 # }}}
 
