@@ -204,10 +204,10 @@ Depends: python (>= 2.5.0)
                 self.check_downgrade(p.version, new_version)
                 p.version = new_version
 
-    def replace_versioned_packages(self, version):
+    def replace_versioned_packages(self, version, old_version='0.0.0.0'):
         new_deps = []
         for p in self.get_packages():
-            if p.version:
+            if p.version and p.version == old_version:
                 p.version = version
                 new_deps.append(p)
         self.replace_dependencies(new_deps)

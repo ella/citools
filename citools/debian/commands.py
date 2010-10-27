@@ -111,17 +111,11 @@ def update_dependency_versions(repositories, control_path, workdir=None, accepte
 
     deps_from_repositories = []
 
-    current_meta_version = None
-    for package in cfile.get_versioned_dependencies():
-        if not current_meta_version:
-            current_meta_version = package.version
-        else:
-            assert current_meta_version == package.version, "Versioned packages with different versions, aborting"
+    cfile_meta_version = '0.0.0.0'
 
     for repository in repositories:
         deps = fetch_new_dependencies(repository, workdir)
         deps_from_repositories.extend(deps)
-
 
     #FIXME: This will download deps again, fix it
     meta_version = compute_meta_version(repositories, workdir=workdir, accepted_tag_pattern=accepted_tag_pattern)
@@ -138,10 +132,8 @@ def update_dependency_versions(repositories, control_path, workdir=None, accepte
 
     cfile.replace_dependencies(deps_from_repositories)
 
-    # if versioned packages present, replace'em
-    if current_meta_version:
-        replace_versioned_debian_files(debian_path=dirname(control_path), original_version=current_meta_version, new_version=meta_version_string, control_file=cfile)
-        cfile.replace_versioned_packages(meta_version_string)
+    replace_versioned_debian_files(debian_path=dirname(control_path), original_version=cfile_meta_version, new_version=meta_version_string, control_file=cfile)
+    cfile.replace_versioned_packages(meta_version_string, old_version=cfile_meta_version)
 
     cfile.dump(control_path)
 
