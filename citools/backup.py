@@ -111,7 +111,7 @@ class Backuper(object):
 
     def get_backup(self):
         if self.get_option('tempdir'):
-            self.tmpdir = tmpdir = mkdtemp(prefix=self.get_option('tempdir'))
+            self.tmpdir = tmpdir = mkdtemp(dir=self.get_option('tempdir'))
         else:
             self.tmpdir = tmpdir = mkdtemp()
         protocol = self.get_option("uri").split(':')[0]
