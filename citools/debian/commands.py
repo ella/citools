@@ -233,7 +233,7 @@ class UpdateDebianVersion(Command):
         """ Compute current version and update debian version accordingly """
         version = self.distribution.get_version()
         if self.build_number:
-            version = '%s+b%s' % (version, self.build_number)
+            version = '%s-%s' % (version, self.build_number)
         try:
             update_debianization(version)
         except Exception:
