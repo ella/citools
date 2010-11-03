@@ -84,7 +84,11 @@ class Dependency(object):
     def is_versioned(self):
         return bool(self.version and not self.sign)
 
-def get_dependency(name, sign='', version=''):
+class Provider(Dependency):
+    def __repr__(self):
+        return '<Provider(%r, %r, %r)>' % (self.name, self.version, self.sign)
+
+def get_versioned_package(name, klass, sign='', version=''):
     if version and not sign:
         sign = '='
 
@@ -95,7 +99,13 @@ def get_dependency(name, sign='', version=''):
             if version_candidate[0] == '-':
                 version = version_candidate[1:]
                 name = package_name
-    return Dependency(name, version, sign)
+    return klass(name, version, sign)
+
+def get_dependency(name, sign='', version=''):
+    return get_versioned_package(name=name, klass=Dependency, sign=sign, version=version)
+
+def get_provider(name, sign='', version=''):
+    return get_versioned_package(name=name, klass=Provider, sign=sign, version=version)
 
 class SourceParagraph(ControlFileParagraph):
     pass
@@ -103,6 +113,24 @@ class SourceParagraph(ControlFileParagraph):
 class PackageParagraph(ControlFileParagraph):
     def parse_package(self, value):
         return get_dependency(value)
+
+    def parse_provides(self, value):
+        package_name = Word(alphanums + '.-${}:')('name')
+        version = Word(nums + '.-')('version')
+        sign = reduce(or_, map(Literal, ('>=', '<=', '=',)))('sign')
+        provider = (
+                (
+                    package_name +
+                    Literal('(').suppress() +
+                    Optional(sign)('sign') +
+                    version +
+                    Literal(')').suppress()
+                ) | (
+                    package_name
+                )
+            ).setParseAction(lambda x: get_provider(x.name, x.sign, x.version))
+        providers = Optional(delimitedList(provider, ','))
+        return providers.parseString(value, True).asList()
 
     def parse_depends(self, value):
         package_name = Word(alphanums + '.-${}:')('name')
@@ -123,6 +151,9 @@ class PackageParagraph(ControlFileParagraph):
         return dependencies.parseString(value, True).asList()
 
     def dump_depends(self, value):
+        return ', '.join(map(str, value))
+
+    def dump_provides(self, value):
         return ', '.join(map(str, value))
 
 class ControlFile(object):
@@ -152,6 +183,7 @@ Depends: python (>= 2.5.0)
             raise NotImplementedError()
         self.source = SourceParagraph(paragraphs[0])
         self.packages = []
+
         for s in paragraphs[1:]:
             if s:
                 self.add_package(s)
@@ -163,6 +195,9 @@ Depends: python (>= 2.5.0)
 
     def get_dependencies(self):
         return chain(*(p.get('depends', []) for p in self.packages))
+
+    def get_provides(self):
+        return chain(*(p.get('provides', []) for p in self.packages))
 
     def get_versioned_dependencies(self):
         return [d for d in self.get_dependencies() if d.is_versioned()]
@@ -204,14 +239,36 @@ Depends: python (>= 2.5.0)
                 self.check_downgrade(p.version, new_version)
                 p.version = new_version
 
+    def replace_provides(self, deps_from_repositories):
+        new_versions = dict((p.name, p.version) for p in deps_from_repositories)
+        for p in self.get_provides():
+            if p.name in new_versions:
+                self._pname = p.name
+                new_version = new_versions[p.name]
+                self.check_downgrade(p.version, new_version)
+                p.version = new_version
+
     def replace_versioned_packages(self, version, old_version='0.0.0.0'):
+        self.replace_versioned_dependencies(version, old_version)
+        self.replace_versioned_provides(version, old_version)
+
+    def replace_versioned_dependencies(self, version, old_version='0.0.0.0'):
         new_deps = []
         for p in self.get_packages():
             if p.version and p.version == old_version:
                 p.version = version
                 new_deps.append(p)
         self.replace_dependencies(new_deps)
-    
+
+    def replace_versioned_provides(self, version, old_version='0.0.0.0'):
+        new_deps = []
+        for p in self.get_provides():
+            if p.version and p.version == old_version:
+                p.version = version
+                new_deps.append(p)
+        self.replace_provides(new_deps)
+        return new_deps
+
     def dump(self, filename=None):
         out = '\n\n'.join(p.dump() for p in [self.source] + self.packages)
         if filename:
@@ -219,5 +276,3 @@ Depends: python (>= 2.5.0)
             fout.write(out)
             fout.close()
         return out
-
-
