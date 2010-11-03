@@ -2,9 +2,8 @@ from __future__ import with_statement
 import os
 from shutil import copytree
 from os.path import dirname, exists, join
-from popen2 import Popen3
 import re
-from subprocess import check_call
+from subprocess import check_call, Popen
 from datetime import datetime
 
 from distutils.core import Command
@@ -174,11 +173,7 @@ def update_debianization(version):
                       'hash' : hash
     }
 
-    proc = Popen3('dch --changelog %(changelog)s --newversion %(version)s "%(message)s"' % {
-                 'changelog' : changelog,
-                 'version' : version,
-                 'message' : message,
-           })
+    proc = Popen(['dch', '--changelog', changelog, '--newversion', version, '"%s"' % message])
 
     return_code = proc.wait()
     if return_code == 0:
