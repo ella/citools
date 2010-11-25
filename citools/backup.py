@@ -5,6 +5,7 @@ Tools related to backup handling (download, restore etc.)
 import os
 import urllib2
 import tarfile
+import atexit
 from subprocess import check_call
 from shutil import rmtree
 from tempfile import mkdtemp
@@ -33,6 +34,8 @@ class Backuper(object):
 
         if len(self.db_sections) == 0:
             raise NoOptionError("No database settings in configuration file.")
+
+        atexit.register(self.clean_backup)
 
 
     def get_option(self, option):
@@ -111,7 +114,7 @@ class Backuper(object):
 
     def get_backup(self):
         if self.get_option('tempdir'):
-            self.tmpdir = tmpdir = mkdtemp(prefix=self.get_option('tempdir'))
+            self.tmpdir = tmpdir = mkdtemp(dir=self.get_option('tempdir'))
         else:
             self.tmpdir = tmpdir = mkdtemp()
         protocol = self.get_option("uri").split(':')[0]
@@ -122,11 +125,8 @@ class Backuper(object):
             self.backup_files = self.get_backup_sql(backupfile)
 
     def clean_backup(self):
-        # and delete temporary dir
-        rmtree(self.tmpdir)
-#        for file in os.listdir(self.tmpdir):
-#            os.remove(os.path.join(self.tmpdir, file))
-#        os.rmdir(self.tmpdir)
+        # delete temporary dir
+        rmtree(self.tmpdir, ignore_errors=True)
         return 0
 
     def restore_backup(self):

@@ -2,8 +2,7 @@ from subprocess import CalledProcessError
 from distutils.command.config import config
 import re
 import os
-from popen2 import Popen3
-from subprocess import Popen, PIPE, check_call, CalledProcessError
+from subprocess import Popen, PIPE, CalledProcessError
 from tempfile import mkdtemp
 
 from urlparse import urlsplit
@@ -257,7 +256,7 @@ def get_git_head_hash(fix_environment=False, repository_directory=None):
         os.environ['GIT_DIR'] = os.path.join(repository_directory, '.git')
 
     try:
-        proc = Popen3("git rev-parse HEAD")
+        proc = Popen(["git", "rev-parse", "HEAD"])
         return_code = proc.wait()
         if return_code == 0:
             return proc.fromchild.read().strip()
