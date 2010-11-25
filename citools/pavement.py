@@ -1,4 +1,3 @@
-from ftplib import error_perm
 import os
 import sys
 from os.path import join, exists
