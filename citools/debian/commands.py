@@ -3,7 +3,7 @@ import os
 from shutil import copytree
 from os.path import dirname, exists, join
 import re
-from subprocess import check_call, Popen
+from subprocess import check_call, Popen, PIPE
 from datetime import datetime
 
 from distutils.core import Command
@@ -173,11 +173,11 @@ def update_debianization(version):
                       'hash' : hash
     }
 
-    proc = Popen(['dch', '--changelog', changelog, '--newversion', version, '"%s"' % message])
+    proc = Popen(['dch', '--changelog', changelog, '--newversion', version, '"%s"' % message], stdout=PIPE)
 
     return_code = proc.wait()
     if return_code == 0:
-        return proc.fromchild.read().strip()
+        return proc.stdout.read().strip()
     else:
         raise ValueError("Updating debianization failed with exit code %s" % return_code)
 

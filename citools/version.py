@@ -256,10 +256,10 @@ def get_git_head_hash(fix_environment=False, repository_directory=None):
         os.environ['GIT_DIR'] = os.path.join(repository_directory, '.git')
 
     try:
-        proc = Popen(["git", "rev-parse", "HEAD"])
+        proc = Popen(["git", "rev-parse", "HEAD"], stdout=PIPE)
         return_code = proc.wait()
         if return_code == 0:
-            return proc.fromchild.read().strip()
+            return proc.stdout.read().strip()
         else:
             raise ValueError("Non-zero return code %s from git log" % return_code)
 
