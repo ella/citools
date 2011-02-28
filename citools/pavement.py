@@ -215,3 +215,17 @@ def ping_buildmaster():
         options.branch = retrieve_current_branch()
 
     buildbot_ping_git(options.host, int(options.port), options.branch)
+
+@task
+@consume_args
+def record_packages(production_machine, preproduction_machine, clean_machine, project, project_version='', spectator_password='', unwanted_packages='mypage;ella', domain_username=''):
+    sh('fab compare_vs_production:%(pm)s,%(p)s,%(pv)s,%(sp)s,host=%(cm)s execute_diff_packages:%(up)s,host=%(prem)s upload_packages:host=%(du)s' % {
+	"pm" : production_machine,
+	"p" : project,
+	"pv" : project_version,
+	"sp" : spectator_password,
+	"cm" : lean_machine,
+	"up" : unwanted_packages,
+	"prem" : preproduction_machine,
+	"du" : domain_username
+    })
