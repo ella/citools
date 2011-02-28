@@ -219,7 +219,7 @@ def ping_buildmaster():
 @task
 @consume_args
 def record_packages(production_machine, preproduction_machine, clean_machine, project, project_version='', spectator_password='', unwanted_packages='mypage;ella', domain_username=''):
-    sh('fab compare_vs_production:%(pm)s,%(p)s,%(pv)s,%(sp)s,host=%(cm)s execute_diff_packages:%(up)s,host=%(prem)s upload_packages:host=%(du)s' % {
+    sh('fab compare_vs_production:%(pm)s,%(p)s,%(pv)s,%(sp)s,host=%(cm)s execute_diff_packages:%(up)s,host=%(prem)s upload_packages:%(du)s,host=%(cm)s' % {
 	"pm" : production_machine,
 	"p" : project,
 	"pv" : project_version,
