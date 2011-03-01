@@ -224,8 +224,63 @@ def record_packages(production_machine, preproduction_machine, clean_machine, pr
 	"p" : project,
 	"pv" : project_version,
 	"sp" : spectator_password,
-	"cm" : lean_machine,
+	"cm" : clean_machine,
 	"up" : unwanted_packages,
 	"prem" : preproduction_machine,
 	"du" : domain_username
+    })
+
+@task
+@consume_args
+def install_production_packages(production_machine, clean_machine, spectator_password=''):
+    sh('fab install_production_packages:%(pm)s,%(sp)s,host=%(cm)s' % {
+	"pm" : production_machine,
+	"cm" : clean_machine,
+	"sp" : spectator_password
+    })
+
+@task
+@consume_args
+def install_project(clean_machine, project, project_version=''):
+    sh('fab install_project:%(p)s,%(pv)s,host=%(cm)s' % {
+	"cm" : clean_machine,
+	"p" : project,
+	"pv" : project_version
+    })
+
+@task
+@consume_args
+def compare_vs_production(production_machine, clean_machine, project, project_version='', spectator_password=''):
+    sh('fab compare_vs_production:%(pm)s,%(p)s,%(pv)s,%(sp)s,host=%(cm)s' % {
+	"pm" : production_machine,
+	"p" : project,
+	"pv" : project_version,
+	"cm" : clean_machine,
+	"sp" : spectator_password
+    })
+
+@task
+@consume_args
+def execute_diff_packages(production_machine, preproduction_machine, clean_machine, project, project_version='', spectator_password='', unwanted_packages='mypage;ella'):
+    sh('fab compare_vs_production:%(pm)s,%(p)s,%(pv)s,%(sp)s,host=%(cm)s execute_diff_packages:%(up)s,host=%(prem)s' % {
+	"pm" : production_machine,
+	"p" : project,
+	"pv" : project_version,
+	"sp" : spectator_password,
+	"cm" : clean_machine,
+	"up" : unwanted_packages,
+	"prem" : preproduction_machine
+    })
+
+@task
+@consume_args
+def download_diff_packages(production_machine, preproduction_machine, clean_machine, project, project_version='', spectator_password='', unwanted_packages='mypage;ella'):
+    sh('fab compare_vs_production:%(pm)s,%(p)s,%(pv)s,%(sp)s,host=%(cm)s execute_diff_packages:%(up)s,host=%(prem)s download_diff_packages:host=%(cm)s' % {
+	"pm" : production_machine,
+	"p" : project,
+	"pv" : project_version,
+	"sp" : spectator_password,
+	"cm" : clean_machine,
+	"up" : unwanted_packages,
+	"prem" : preproduction_machine
     })
