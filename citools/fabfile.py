@@ -106,7 +106,7 @@ def getlistpackageslocal(dpkgl_file):
 	    result[row[0]] = [row[0], row[1]]
     return result
 
-def install_production_packages(production_machine, spectator_password)
+def install_production_packages(production_machine, spectator_password):
     """
     This function get dpkg -l from url from production and install it including versions
     """
@@ -129,7 +129,7 @@ def install_production_packages(production_machine, spectator_password)
 
 
 def install_project(project, project_version):
-     """
+    """
     This function take -be, -fe, -img for given project, if the version is not given we get the latest version from devel repository
     """
     if project_version != '':
