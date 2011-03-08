@@ -2,15 +2,16 @@
 from ConfigParser import SafeConfigParser
 from unittest import TestCase
 
+from datetime import datetime
 import os
 from subprocess import Popen, PIPE
 from shutil import rmtree
 from tempfile import mkdtemp, mkstemp
-from datetime import datetime
 
 from citools.git import retrieve_repository_metadata, fetch_repository, filter_parse_date
 
 from citools.version import get_current_branch
+from nose.plugins.skip import SkipTest
 
 class GitTestCase(TestCase):
     def _create_git_repository(self):
@@ -50,12 +51,18 @@ class GitTestCase(TestCase):
         os.chdir(self.oldcwd)
 
 class TestDateParsing(TestCase):
-
+    
+    def setUp(self):
+        super(TestDateParsing, self).setUp()
+        
     def test_naive_parsed(self):
         self.assertEquals(datetime(2009, 12, 1, 20, 58, 01), filter_parse_date('Tue Dec 1 20:58:01 2009'))
 
     def test_tz_parsed(self):
         self.assertEquals(datetime(2009, 12, 1, 20, 58, 01), filter_parse_date('Tue Dec 1 20:58:01 2009 +0100'))
+    
+    def tearDown(self):
+        super(TestDateParsing, self).tearDown()
 
 class TestGitBranchParsing(TestCase):
 

@@ -1,16 +1,20 @@
-from subprocess import CalledProcessError
 from ConfigParser import SafeConfigParser
+from datetime import datetime
+from distutils.core import Command
 from distutils.errors import DistutilsOptionError
+from locale import resetlocale, setlocale, LC_ALL
+from subprocess import CalledProcessError
 from tempfile import mkdtemp
 import os
+import re
 from subprocess import check_call, PIPE, Popen
 import logging
 import traceback
-from datetime import datetime
 
 log = logging.getLogger("citools.git")
 
-from distutils.core import Command
+
+USED_GIT_PARSING_LOCALE = "en_US"
 
 def fetch_repository(repository, workdir=None, branch=None, cache_config_dir=None, cache_config_file_name="cached_repositories.ini", reference_repository=None):
     """
@@ -82,7 +86,7 @@ def get_revision_metadata_property(changeset, property, filter=None, encoding="u
     filter = filter or default_filter
 
     cmd = ["git", "show", "--quiet", '--date=local', '--pretty=format:%s' % property, changeset]
-    proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
+    proc = Popen(cmd, stdout=PIPE, stderr=PIPE, env={"LC_ALL" : USED_GIT_PARSING_LOCALE})
     stdout, stderr = proc.communicate()
 
     # --quiet causes git show to returncode 1
@@ -92,16 +96,26 @@ def get_revision_metadata_property(changeset, property, filter=None, encoding="u
 
     return filter(stdout.strip())
 
-def filter_parse_date(stdout):
+def filter_parse_date(stdout, used_locale=None):
     """ Construct a datetime object from local date string returned by git show """
-    #TODO: Refactor to be nicer
-    try:
-        return datetime.strptime(stdout, "%a %b %d %H:%M:%S %Y")
-    except ValueError:
-        # +offset provided, strip it out
-        return datetime.strptime(stdout[:-6], "%a %b %d %H:%M:%S %Y")
+    # originally, we just passed this to strptime, but it turned out it's not exactly
+    # working for some cases, such as single-digit days
     
-
+    setlocale(LC_ALL, used_locale or USED_GIT_PARSING_LOCALE)
+    
+    # use regexp to sniff what we want, skipping things like TZ info
+    match = re.match(r"^(?P<dow>\w+)\ {1}(?P<month>\w+)\ {1}(?P<day>\d{1,2})\ {1}(?P<hour>\d{1,2})\:{1}(?P<minute>\d{1,2})\:{1}(?P<second>\d{1,2})\ {1}(?P<year>\d+).*$", stdout, re.UNICODE)
+    if not match:
+        raise ValueError("Date '%s' is not matching our format, please report bug" % str(stdout))
+    data = match.groupdict()
+    # to be able to provide zero-padded values, non-string values must be integers 
+    data.update(dict([(key, int(value)) for key, value in data.items() if key not in ["dow", "month"]]))
+    date = datetime.strptime("%(dow)s %(month)s %(day)02d %(hour)02d:%(minute)02d:%(second)02d %(year)04d" % data,
+        "%a %b %d %H:%M:%S %Y"
+    )
+    resetlocale()
+    return date
+    
 def get_repository_uri():
     cmd = ["git", "config", "remote.origin.url"]
     proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
@@ -114,6 +128,11 @@ def get_revision_metadata(changeset, metadata_property_map=None, repository_uri=
 
     Uses slow solution (git log query per property) to avoid "delimiter inside result" problem.
     """
+    
+    # it looks like git is displaying time in en_US locale even if, i.e. cs_CZ
+    # is set, which is bad when using with %a or %b...so hack it
+    
+    setlocale(LC_ALL, USED_GIT_PARSING_LOCALE)
 
     metadata = {
         "repository_uri" : repository_uri or get_repository_uri()
@@ -142,6 +161,8 @@ def get_revision_metadata(changeset, metadata_property_map=None, repository_uri=
         except (CalledProcessError, ValueError):
             metadata[metadata_property_map[property]['name']] = "[failed to retrieve]"
             log.error("Error when parsing metadata: %s" % traceback.format_exc())
+
+    resetlocale()
     return metadata
 
 
