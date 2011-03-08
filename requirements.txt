@@ -1,7 +1,9 @@
 pyparsing
 argparse
 Paver >= 1.0.3
+jinja2
 
 # testing deps
 pyftpdlib
+
 

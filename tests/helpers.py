@@ -98,10 +98,6 @@ def copytree(src, dst, symlinks=False, ignore=None):
     if errors:
         raise Error, errors
 
-
-
-
-
 class MongoTestCase(TestCase):
     def setUp(self):
         try:
