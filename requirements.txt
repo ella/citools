@@ -4,6 +4,6 @@ Paver >= 1.0.3
 jinja2
 
 # testing deps
-pyftpdlib
+pyftpdlib < 0.6
 
 
