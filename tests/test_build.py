@@ -1,11 +1,15 @@
+from __future__ import with_statement
 import os
 from shutil import rmtree
 from subprocess import check_call, PIPE
 from tempfile import mkdtemp
+from unittest import TestCase
 
 from nose.tools import assert_equals, assert_true
 
-from citools.build import copy_images, replace_template_files, replace_template_filenames
+from citools.build import copy_images, replace_template_files, rename_template_files
+
+from helpers import GitTestCase, BuildTestCase
 
 class TestCopyImages(object):
 
@@ -90,10 +94,9 @@ class TestTemplateReplacement(object):
         req = "dependency-{{ branch }}"
         req_fn = os.path.join(self.tmp, 'requirements.txt') 
         
-        f = open(req_fn, 'w')
-        f.write(req)
-        f.close()        
-        
+        with open(req_fn, 'w') as f:
+            f.write(req)
+            
         replace_template_files(root_directory=self.tmp, variables={
             'branch' : 'test',
         })
@@ -104,11 +107,10 @@ class TestTemplateReplacement(object):
         req = "Example debian postinstall file"
         req_fn = os.path.join(self.tmp, 'debian-postinstal-for-package-branch-{{ branch }}.postinstall') 
         
-        f = open(req_fn, 'w')
-        f.write(req)
-        f.close()        
+        with open(req_fn, 'w') as f:
+            f.write(req)
         
-        replace_template_filenames(root_directory=self.tmp, variables={
+        rename_template_files(root_directory=self.tmp, variables={
             'branch' : 'auto',
         }, subdirs=["."])
         
@@ -120,3 +122,34 @@ class TestTemplateReplacement(object):
         os.chdir(self.oldcwd)
 
         rmtree(self.tmp)
+
+class TestBuildtimeTemplateReplacements(BuildTestCase):
+    PROJECT_VERSION_TAG = '1.1'
+
+    def test_requirements_replaced(self):
+        with open(os.path.join(self.repo, 'requirements.txt'), 'wb') as f:
+            f.write("dependency-with-{{ version }}")
+
+        self.do_piped_command_for_success(["git", "add", "*"])
+        self.commit(message="requirements")
+        
+        check_call(["python", "setup.py", "compute_version_git"], stdout=PIPE, stderr=PIPE)
+        check_call(["python", "setup.py", "replace_templates"], stdout=PIPE, stderr=PIPE)
+        
+        with open(os.path.join(self.repo, 'requirements.txt')) as f:
+            assert_equals("dependency-with-%s.1" % self.PROJECT_VERSION_TAG, f.read())
+        
+
+    def test_debian_files_renamed(self):
+        tf = os.path.join(self.repo, 'debian', 'debian-file-{{ version }}.postinstall')
+        with open(tf, 'wb') as f:
+            f.write("")
+
+        self.do_piped_command_for_success(["git", "add", "*"])
+        self.commit(message="requirements")
+        
+        check_call(["python", "setup.py", "compute_version_git"], stdout=PIPE, stderr=PIPE)
+        check_call(["python", "setup.py", "rename_template_files"], stdout=PIPE, stderr=PIPE)
+
+        self.assertTrue(os.path.exists(os.path.join(self.repo, 'debian', 'debian-file-1.1.1.postinstall')))
+        self.assertFalse(os.path.exists(tf))

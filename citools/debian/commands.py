@@ -8,9 +8,10 @@ from datetime import datetime
 
 from distutils.core import Command
 
-from citools.version import get_git_describe, compute_version, compute_meta_version, get_git_head_hash, retrieve_current_branch
+from citools.build import ReplaceTemplateFiles, RenameTemplateFiles
 from citools.debian.control import ControlFile, Dependency
 from citools.git import fetch_repository
+from citools.version import get_git_describe, compute_version, compute_meta_version, get_git_head_hash, retrieve_current_branch
 
 
 __all__ = (
@@ -257,6 +258,8 @@ class CreateDebianPackage(Command):
 
     sub_commands = [
         ("compute_version_git", None),
+        ("replace_templates", None),
+        ("rename_template_files", None),
         ("update_debian_version", None),
         ("bdist_deb", None),
     ]

@@ -65,6 +65,8 @@ setup(
             'copy_dependency_images = citools.build:CopyDependencyImages',
             'buildbot_ping_git = citools.buildbots:BuildbotPingGit',
             'save_repository_information_git = citools.git:SaveRepositoryInformationGit',
+            'replace_templates = citools.build:ReplaceTemplateFiles',
+            'rename_template_files = citools.build:RenameTemplateFiles',
         ],
         "distutils.setup_keywords": [
             "dependencies_git_repositories = citools.version:validate_repositories",

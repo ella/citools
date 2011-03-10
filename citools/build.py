@@ -1,4 +1,7 @@
 from distutils.command.config import config
+from distutils.core import Command
+
+
 import logging
 import os
 from shutil import copytree
@@ -69,7 +72,7 @@ def replace_template_files(root_directory, variables=None, template_files=None):
             f.write(rendered)
             f.close()
         
-def replace_template_filenames(root_directory, variables=None, subdirs=None):
+def rename_template_files(root_directory, variables=None, subdirs=None):
     """
     In given root directory, walk through subdirs ("." allowed) and treat filename
     of every file present in given subdir as jinja2 template, renaming current
@@ -97,4 +100,39 @@ def replace_template_filenames(root_directory, variables=None, subdirs=None):
                 newname = Template(fn).render(**variables)
                 
                 os.rename(fp, os.path.join(os.path.join(root_directory, dir, newname)))
-    
+
+class ReplaceTemplateFiles(config):
+
+    description = ""
+
+    user_options = [
+    ]
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        replace_template_files(root_directory=os.curdir, variables = {
+            'version' : self.distribution.get_version()
+        })
+
+class RenameTemplateFiles(Command):
+
+    description = ""
+
+    user_options = [
+    ]
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        rename_template_files(root_directory=os.curdir, variables = {
+            'version' : self.distribution.get_version()
+        })
