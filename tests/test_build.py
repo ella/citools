@@ -140,6 +140,20 @@ class TestBuildtimeTemplateReplacements(BuildTestCase):
             assert_equals("dependency-with-%s.1" % self.PROJECT_VERSION_TAG, f.read())
         
 
+    def test_given_subdir_content_replaced(self):
+        tf = os.path.join(self.repo, 'debian', 'debian-file.postinstall')
+        with open(tf, 'wb') as f:
+            f.write("dependency-with-{{ version }}")
+
+        self.do_piped_command_for_success(["git", "add", "*"])
+        self.commit(message="requirements")
+        
+        check_call(["python", "setup.py", "compute_version_git"], stdout=PIPE, stderr=PIPE)
+        check_call(["python", "setup.py", "replace_templates"], stdout=PIPE, stderr=PIPE)
+
+        with open(os.path.join(self.repo, 'debian', 'debian-file.postinstall')) as f:
+            assert_equals("dependency-with-%s.1" % self.PROJECT_VERSION_TAG, f.read())
+
     def test_debian_files_renamed(self):
         tf = os.path.join(self.repo, 'debian', 'debian-file-{{ version }}.postinstall')
         with open(tf, 'wb') as f:

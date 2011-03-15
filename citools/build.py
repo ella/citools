@@ -1,3 +1,5 @@
+from __future__ import with_statement
+
 from distutils.command.config import config
 from distutils.core import Command
 
@@ -47,15 +49,23 @@ class CopyDependencyImages(config):
             traceback.print_exc()
             raise
 
-def replace_template_files(root_directory, variables=None, template_files=None):
+def _replace_template(file_path, variables):
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as f:
+            from jinja2 import Template
+            rendered = Template(f.read()).render(**variables)
+        
+        f = open(file_path, 'w')
+        f.write(rendered)
+        f.close()
+
+def replace_template_files(root_directory, variables=None, template_files=None, subdirs=None):
     """
-    For given root_directory, walk through files specied in template_files (or default ones).
+    For given root_directory, walk through files specified in template_files (or default ones)
+    and every file in given subdirectories ('debian' by default, pass [] to skip this step). 
     Treat them as jinja2 templates, overwriting current content with rendered one,
     using variables provided in given variables argument (or default ones, mostly retrieved from git repo). 
     """
-    from jinja2 import Environment, FileSystemLoader
-    env = Environment(loader=FileSystemLoader(searchpath=root_directory))
-    
     variables = variables or {
         'branch' : retrieve_current_branch(repository_directory=root_directory, fix_environment=True),
     }
@@ -64,13 +74,17 @@ def replace_template_files(root_directory, variables=None, template_files=None):
     
     for template in templates:
         fp = os.path.join(root_directory, template)
-        if os.path.exists(fp):
-            t = env.get_template(template)
-            rendered = t.render(**variables)
-            
-            f = open(fp, 'w')
-            f.write(rendered)
-            f.close()
+        _replace_template(fp, variables)
+    
+    if subdirs is None:
+        subdirs = ['debian']
+    
+    if subdirs:
+        for subdir in subdirs:
+            dp = os.path.join(root_directory, subdir)
+            if os.path.exists(dp):
+                for file in os.listdir(dp):
+                    _replace_template(os.path.join(root_directory, subdir, file), variables)
         
 def rename_template_files(root_directory, variables=None, subdirs=None):
     """
