@@ -1,12 +1,12 @@
 Source: centrum-python-citools
 Section: python
 Priority: optional
-Maintainer: Lukas Linhart <lukas.linhartl@centrumholdings.com>
+Maintainer: Lukas Linhart <lukas.linhart@centrumholdings.com>
 Build-Depends: cdbs (>= 0.4.41), debhelper (>= 5.0.37.2), python-dev, python-support (>= 0.3), python-setuptools
 Standards-Version: 3.7.2
 
 Package: centrum-python-citools
 Architecture: all
-Depends: ${python:Depends}, ${misc:Depends}, python-argparse (>= 0.9.0), python-pyparsing, devscripts
+Depends: python-argparse (>= 0.9.0), python-pyparsing, devscripts
 Description: Collection of scripts to ease building CI system
 
