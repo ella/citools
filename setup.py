@@ -33,12 +33,6 @@ setup(
 
     include_package_data = True,
 
-#    buildbot_meta_master = {
-#        'host' : 'cnt-buildmaster.dev.chservices.cz',
-#        'port' : 9996,
-#        'branch' : 'master',
-#    },
-
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
