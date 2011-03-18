@@ -1,6 +1,7 @@
 
 from unittest import TestCase
 
+from mock import Mock
 import os
 from subprocess import Popen, PIPE, check_call
 from shutil import rmtree
@@ -10,7 +11,8 @@ from tempfile import mkdtemp
 from citools.version import (
     compute_version, get_git_describe, replace_version, compute_meta_version,
     sum_versions, fetch_repository,
-    get_highest_tag, get_tags_from_line
+    get_highest_tag, get_tags_from_line,
+    get_branch_suffix,
 )
 
 class TestVersioning(TestCase):
@@ -473,3 +475,12 @@ class TestVersionRetrievingHigherVersion(TestCase):
     def test_highest_tag_retrieved(self):
         self.assertEquals('citools-0.4', get_highest_tag(['citools-0.3.520', 'citools-0.2', 'citools-0.4']))
 
+
+class TestBranchSuffix(TestCase):
+    def test_slash_just_dashed(self):
+        self.assertEquals("story-123", get_branch_suffix(Mock(spec=[]), "story/123"))
+
+    def test_map_obeyed(self):
+        dist = Mock()
+        dist.branch_rename_map = {'spam' : 'egg'}
+        self.assertEquals("egg", get_branch_suffix(dist, "spam"))

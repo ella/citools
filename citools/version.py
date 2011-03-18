@@ -422,13 +422,11 @@ def get_branch_suffix(metadata, branch):
         # replace other chars and return "slugified" version
         unixname = undiacritic(branch)
         unixname = unixname.lower()
-        unixname = re.sub("[ ]", "-", unixname)
-        unixname = re.sub("([-]+)", "-", unixname)
-        unixname = re.sub("([_]+)", "-", unixname)
-        unixname = re.sub("^([^a-z])+", "", unixname)
-        unixname = re.sub("([^a-z]+)$", "", unixname)
+        unixname = re.sub("[^a-z0-9]+", "-", unixname)
+        unixname = re.sub("^([^a-z0-9])+", "", unixname)
+        unixname = re.sub("([^a-z0-9]+)$", "", unixname)
         return unixname
-
+    
 class GitSetMetaVersion(config):
 
     description = "calculate and set version from all dependencies"
