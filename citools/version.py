@@ -470,7 +470,7 @@ class GitSetMetaVersion(config):
             replace_version_in_file(version, 'setup.py')
 
             self.distribution.metadata.version = version_str
-            self.distribution.metadata.dependency_versions = dependency_versions
+            self.distribution.metadata.dependency_versions = dict([(k,'.'.join(map(str, v))) for k,v in dependency_versions.items()])
             self.distribution.metadata.branch_suffix = branch_suffix
             
             print "Current version is %s" % version_str
