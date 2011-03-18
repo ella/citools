@@ -4,8 +4,9 @@ import re
 import os
 from subprocess import Popen, PIPE, CalledProcessError
 from tempfile import mkdtemp
-
+from unicodedata import normalize, combining
 from urlparse import urlsplit
+
 from citools.git import fetch_repository
 
 """
@@ -181,9 +182,6 @@ def get_git_describe(fix_environment=False, repository_directory=None, accepted_
 
         os.environ['GIT_DIR'] = os.path.join(repository_directory, '.git')
 
-    # git describe fails for us
-
-
     command = ["git", "describe"]
 
     if accepted_tag_pattern is not None:
@@ -349,7 +347,7 @@ def retrieve_current_branch(fix_environment=False, repository_directory=None, **
                 del os.environ['GIT_DIR']
 
 
-def compute_meta_version(dependency_repositories, workdir=None, accepted_tag_pattern=None, cachedir=None):
+def compute_meta_version(dependency_repositories, workdir=None, accepted_tag_pattern=None, cachedir=None, dependency_versions=None):
 
     kwargs = {}
 
@@ -396,8 +394,40 @@ def compute_meta_version(dependency_repositories, workdir=None, accepted_tag_pat
         # now hardcoded, but shall be retrieved via egg_info or custom command
         project_pattern = "%s-[0-9]*" % repository_dict['package_name']
         new_version = compute_version(get_git_describe(repository_directory=workdir, fix_environment=True, accepted_tag_pattern=project_pattern))
+        if dependency_versions is not None:
+            dependency_versions[repository_dict['package_name']] = new_version
         version = sum_versions(version, new_version)
     return version
+
+
+def undiacritic(text, encoding='utf-8'):
+    if type(text) == type(''):
+        text = unicode(text, encoding)
+    text = normalize('NFKD', text)
+    text = [char for char in text if not combining(char)]
+    text = ''.join(text)
+    return text
+
+
+def get_branch_suffix(metadata, branch):
+    rename_map = getattr(metadata, "branch_rename_map", {
+        'automation' : 'auto',
+        'testomation' : 'test',
+    })
+    
+    if branch in rename_map:
+        return rename_map[branch]
+    else:
+        # only [a-z0-9-] should be in name (and no following -)s
+        # replace other chars and return "slugified" version
+        unixname = undiacritic(branch)
+        unixname = unixname.lower()
+        unixname = re.sub("[ ]", "-", unixname)
+        unixname = re.sub("([-]+)", "-", unixname)
+        unixname = re.sub("([_]+)", "-", unixname)
+        unixname = re.sub("^([^a-z])+", "", unixname)
+        unixname = re.sub("([^a-z]+)$", "", unixname)
+        return unixname
 
 class GitSetMetaVersion(config):
 
@@ -421,7 +451,17 @@ class GitSetMetaVersion(config):
         """
         try:
             format = "%s-[0-9]*" % self.distribution.metadata.get_name()
-            meta_version = compute_meta_version(self.distribution.dependencies_git_repositories, accepted_tag_pattern=format, cachedir=self.cache_directory)
+            dependency_versions = {}
+            
+            meta_version = compute_meta_version(
+                self.distribution.dependencies_git_repositories,
+                accepted_tag_pattern = format,
+                cachedir = self.cache_directory,
+                dependency_versions = dependency_versions
+            )
+
+            branch_suffix = get_branch_suffix(self.distribution.metadata, retrieve_current_branch())
+
 
             version = meta_version
             version_str = '.'.join(map(str, version))
@@ -432,7 +472,12 @@ class GitSetMetaVersion(config):
             replace_version_in_file(version, 'setup.py')
 
             self.distribution.metadata.version = version_str
+            self.distribution.metadata.dependency_versions = dependency_versions
+            self.distribution.metadata.branch_suffix = branch_suffix
+            
             print "Current version is %s" % version_str
+            print "Current branch suffix is %s" % branch_suffix
+
         except Exception:
             import traceback
             traceback.print_exc()
@@ -460,6 +505,7 @@ class GitSetVersion(config):
             format = "%s-[0-9]*" % self.distribution.metadata.get_name()
 
             current_git_version = get_git_describe(accepted_tag_pattern=format)
+            branch_suffix = get_branch_suffix(self.distribution.metadata, retrieve_current_branch())
 
             version = compute_version(current_git_version)
             version_str = '.'.join(map(str, version))
@@ -473,7 +519,10 @@ class GitSetVersion(config):
                 replace_version_in_file(version, 'pavement.py')
 
             self.distribution.metadata.version = version_str
+            self.distribution.metadata.branch_suffix = branch_suffix
+            
             print "Current version is %s" % version_str
+            print "Current branch suffix is %s" % branch_suffix
         except Exception:
             import traceback
             traceback.print_exc()

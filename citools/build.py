@@ -115,9 +115,24 @@ def rename_template_files(root_directory, variables=None, subdirs=None):
                 
                 os.rename(fp, os.path.join(os.path.join(root_directory, dir, newname)))
 
-class ReplaceTemplateFiles(config):
+def get_common_variables(distribution):
+    variables = {
+        'version' : distribution.get_version()
+    }
+    
+    probe = getattr(distribution.metadata, "template_attributes", [
+        "branch_suffix",
+        "dependency_versions",
+    ])
+    
+    for var in probe:
+        if hasattr(distribution.metadata, var):
+            variables[var] = getattr(distribution.metadata, var)
+    
+    return variables
 
-    description = ""
+class ReplaceTemplateFiles(Command):
+    description = "Inside files parsed as jinja2 templates, do in-place replacement of given variables"
 
     user_options = [
     ]
@@ -129,13 +144,10 @@ class ReplaceTemplateFiles(config):
         pass
 
     def run(self):
-        replace_template_files(root_directory=os.curdir, variables = {
-            'version' : self.distribution.get_version()
-        })
+        replace_template_files(root_directory=os.curdir, variables=get_common_variables(self.distribution))
 
 class RenameTemplateFiles(Command):
-
-    description = ""
+    description = "Files named using jinja2 syntax, rename them using variable substitution."
 
     user_options = [
     ]
@@ -147,6 +159,4 @@ class RenameTemplateFiles(Command):
         pass
 
     def run(self):
-        rename_template_files(root_directory=os.curdir, variables = {
-            'version' : self.distribution.get_version()
-        })
+        rename_template_files(root_directory=os.curdir, variables=get_common_variables(self.distribution))
