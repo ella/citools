@@ -5,5 +5,5 @@ jinja2
 
 # testing deps
 pyftpdlib < 0.6
-
+mock
 
