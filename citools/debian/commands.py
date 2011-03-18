@@ -287,10 +287,10 @@ class CreateDebianMetaPackage(Command):
 
     sub_commands = [
         ("compute_version_meta_git", None),
-        ("update_debian_version", None),
-        ("update_dependency_versions", None),
         ("replace_templates", None),
         ("rename_template_files", None),
+        ("update_debian_version", None),
+        ("update_dependency_versions", None),
         ("copy_dependency_images", None),
         ("bdist_deb", None),
     ]
