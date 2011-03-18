@@ -44,10 +44,19 @@ class BuildDebianPackage(Command):
 
 
 def get_new_dependencies(dir, accepted_tag_pattern=None):
-    cfile = ControlFile(filename=os.path.join(dir, 'debian', 'control'))
+    
+    version = compute_version(get_git_describe(repository_directory=dir, fix_environment=True, accepted_tag_pattern=accepted_tag_pattern))
+    control = os.path.join(dir, 'debian', 'control')
+    
+    ### FIXME: We shall not do this again AND should only use templates
+    from citools.version import replace_version_in_file
+    replace_version_in_file(file=control, version=version)
+
+    
+    cfile = ControlFile(filename=control)
     packages = cfile.get_packages()
 
-    version = ".".join(map(str, compute_version(get_git_describe(repository_directory=dir, fix_environment=True, accepted_tag_pattern=accepted_tag_pattern))))
+    version = ".".join(map(str, version))
     for p in packages:
         p.version = version
 
@@ -66,7 +75,7 @@ def fetch_new_dependencies(repository, workdir=None):
     )
     #FIXME: This should not be hardcoded
     project_pattern = "%s-[0-9]*" % repository['package_name']
-
+    
     deps = get_new_dependencies(repo, accepted_tag_pattern=project_pattern)
 
     return deps
