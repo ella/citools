@@ -79,14 +79,15 @@ def replace_template_files(root_directory, variables=None, template_files=None, 
     
     if subdirs is None:
         subdirs = ['debian']
-    
+
     if subdirs:
         for subdir in subdirs:
             dp = os.path.join(*list(chain([root_directory], subdir.split('/'))))
             if os.path.exists(dp):
                 for file in os.listdir(dp):
-                    if os.path.isfile(file):
-                        _replace_template(os.path.join(root_directory, subdir, file), variables)
+                    fp = os.path.join(root_directory, subdir, file)
+                    if os.path.isfile(fp):
+                        _replace_template(fp, variables)
         
 def rename_template_files(root_directory, variables=None, subdirs=None):
     """
