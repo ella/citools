@@ -4,7 +4,7 @@ then do diff and send residual packages to production repo
 Using fab compare_vs_production:args,host=cleanmachine_address execute_diff_packages:args,host=preproduction_address upload_packages:args,host=cleanmachine_address 
 Example fab compare_vs_production:hp9fe1.cent,centrum-mypage-auto,host=clean.dev.chservices.cz execute_diff_packages:host=cms-hp9fe.dev.chservices.cz upload_packages:host=clean.dev.chservices.cz
 """
-
+import sys
 import string
 import urllib
 from datetime import datetime
@@ -88,7 +88,8 @@ def getlistpackages(dpkgl_file):
     result = {}
     for line in dpkgl_file:
 	row = string.split(line, ";")
-	if len(row) > 1: 
+	if len(row) > 1:
+	    #package, version = checkversion(row[0], row[1])
 	    result[row[0]] = [row[0], row[1]]
     dpkgl_file.close()
     return result
@@ -106,7 +107,7 @@ def getlistpackageslocal(dpkgl_file):
 	    result[row[0]] = [row[0], row[1]]
     return result
 
-def install_production_packages(production_machine, spectator_password):
+def install_production_packages(production_machine, spectator_password=''):
     """
     This function get dpkg -l from url from production and install it including versions
     """
@@ -119,13 +120,18 @@ def install_production_packages(production_machine, spectator_password):
 
     dpkgl_file = urllib.urlopen('http://spectator:%s@cml.tunel.chservices.cz/cgi-bin/dpkg.pl?host=%s' % (PASSWORD, production_machine))
     PACKAGES_LIST = getlistpackages(dpkgl_file)
-
-    for record_key in PACKAGES_LIST:
-	package, version = PACKAGES_LIST[record_key]
-	output = run('apt-get install --force-yes -y %s=%s' % (package,version))
-	if output.return_code != 0:
-	    abort("Aborting, can not install %s in version %s." % (package,version))
-
+    install_packages = ""
+    sorted_packages = PACKAGES_LIST.items()[:]
+    sorted_packages.sort()
+    
+    for record in sorted_packages:
+	package, version = record[1]
+	install_packages = install_packages + " %s=%s" % (package,version)
+        
+    try:
+	output = run('apt-get install --force-yes -y%s' % (install_packages,))
+    except SystemExit, e:
+	print "EXIT: %s" % (e)
 
 
 def install_project(project, project_version):

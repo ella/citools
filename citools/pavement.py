@@ -218,8 +218,29 @@ def ping_buildmaster():
 
 @task
 @consume_args
-def record_packages(production_machine, preproduction_machine, clean_machine, project, project_version='', spectator_password='', unwanted_packages='mypage;ella', domain_username=''):
-    sh('fab compare_vs_production:%(pm)s,%(p)s,%(pv)s,%(sp)s,host=%(cm)s execute_diff_packages:%(up)s,host=%(prem)s upload_packages:%(du)s,host=%(cm)s' % {
+def record_packages(args):
+    production_machine = args[0]
+    preproduction_machine = args[1]
+    clean_machine = args[2]
+    project = args[3]
+    try:
+        project_version = args[4] + ","
+    except IndexError:
+        project_version = ''
+    try:
+        spectator_password = args[5] + ","
+    except IndexError:
+        spectator_password = ""
+    try:
+        unwanted_packages = args[6] + ","
+    except IndexError:
+        unwanted_packages = 'mypage;ella'
+    try:
+        domain_username = args[7]
+    except IndexError:
+        domain_username = ''
+
+    sh('fab compare_vs_production:%(pm)s,%(p)s,%(pv)s%(sp)shost=%(cm)s execute_diff_packages:%(up)shost=%(prem)s upload_packages:%(du)shost=%(cm)s' % {
 	"pm" : production_machine,
 	"p" : project,
 	"pv" : project_version,
@@ -232,8 +253,14 @@ def record_packages(production_machine, preproduction_machine, clean_machine, pr
 
 @task
 @consume_args
-def install_production_packages(production_machine, clean_machine, spectator_password=''):
-    sh('fab install_production_packages:%(pm)s,%(sp)s,host=%(cm)s' % {
+def install_production_packages(args):
+    production_machine = args[0]
+    clean_machine = args[1]
+    try:
+        spectator_password = args[2]+","
+    except IndexError:
+        spectator_password = ''
+    sh('fab install_production_packages:%(pm)s,%(sp)shost=%(cm)s' % {
 	"pm" : production_machine,
 	"cm" : clean_machine,
 	"sp" : spectator_password
@@ -241,8 +268,14 @@ def install_production_packages(production_machine, clean_machine, spectator_pas
 
 @task
 @consume_args
-def install_project(clean_machine, project, project_version=''):
-    sh('fab install_project:%(p)s,%(pv)s,host=%(cm)s' % {
+def install_project(args):
+    clean_machine = args[0]
+    project = args[1]
+    try:
+        project_version = args[2]+","
+    except IndexError:
+        project_version = ''
+    sh('fab install_project:%(p)s,%(pv)shost=%(cm)s' % {
 	"cm" : clean_machine,
 	"p" : project,
 	"pv" : project_version
@@ -250,8 +283,19 @@ def install_project(clean_machine, project, project_version=''):
 
 @task
 @consume_args
-def compare_vs_production(production_machine, clean_machine, project, project_version='', spectator_password=''):
-    sh('fab compare_vs_production:%(pm)s,%(p)s,%(pv)s,%(sp)s,host=%(cm)s' % {
+def compare_vs_production(args):
+    production_machine = args[0]
+    clean_machine = args[1]
+    project = args[2]
+    try:
+        project_version = args[3] + ","
+    except IndexError:
+        project_version = ''
+    try:
+        spectator_password = args[4] + ","
+    except IndexError:
+        spectator_password = ''
+    sh('fab compare_vs_production:%(pm)s,%(p)s,%(pv)s%(sp)shost=%(cm)s' % {
 	"pm" : production_machine,
 	"p" : project,
 	"pv" : project_version,
@@ -261,8 +305,24 @@ def compare_vs_production(production_machine, clean_machine, project, project_ve
 
 @task
 @consume_args
-def execute_diff_packages(production_machine, preproduction_machine, clean_machine, project, project_version='', spectator_password='', unwanted_packages='mypage;ella'):
-    sh('fab compare_vs_production:%(pm)s,%(p)s,%(pv)s,%(sp)s,host=%(cm)s execute_diff_packages:%(up)s,host=%(prem)s' % {
+def execute_diff_packages(args):
+    production_machine = args[0]
+    preproduction_machine = args[1]
+    clean_machine = args[2]
+    project = args[3]
+    try:
+        project_version = args[4] + ","
+    except IndexError:
+        project_version = ''
+    try:
+        spectator_password = args[5] + ","
+    except IndexError:
+        spectator_password = ""
+    try:
+        unwanted_packages = args[6] + ","
+    except IndexError:
+        unwanted_packages = 'mypage;ella'
+    sh('fab compare_vs_production:%(pm)s,%(p)s,%(pv)s%(sp)shost=%(cm)s execute_diff_packages:%(up)shost=%(prem)s' % {
 	"pm" : production_machine,
 	"p" : project,
 	"pv" : project_version,
@@ -274,8 +334,24 @@ def execute_diff_packages(production_machine, preproduction_machine, clean_machi
 
 @task
 @consume_args
-def download_diff_packages(production_machine, preproduction_machine, clean_machine, project, project_version='', spectator_password='', unwanted_packages='mypage;ella'):
-    sh('fab compare_vs_production:%(pm)s,%(p)s,%(pv)s,%(sp)s,host=%(cm)s execute_diff_packages:%(up)s,host=%(prem)s download_diff_packages:host=%(cm)s' % {
+def download_diff_packages(args):
+    production_machine = args[0]
+    preproduction_machine = args[1]
+    clean_machine = args[2]
+    project = args[3]
+    try:
+        project_version = args[4] + ","
+    except IndexError:
+        project_version = ''
+    try:
+        spectator_password = args[5] + ","
+    except IndexError:
+        spectator_password = ""
+    try:
+        unwanted_packages = args[6] + ","
+    except IndexError:
+        unwanted_packages = 'mypage;ella'
+    sh('fab compare_vs_production:%(pm)s,%(p)s,%(pv)s%(sp)shost=%(cm)s execute_diff_packages:%(up)shost=%(prem)s download_diff_packages:host=%(cm)s' % {
 	"pm" : production_machine,
 	"p" : project,
 	"pv" : project_version,
