@@ -113,12 +113,7 @@ def install_production_packages(production_machine, spectator_password=''):
     """
     global PACKAGES_LIST
 
-    if spectator_password =='':
-	PASSWORD = raw_input('spectator password: ')
-    else:
-	PASSWORD = spectator_password
-
-    dpkgl_file = urllib.urlopen('http://spectator:%s@cml.tunel.chservices.cz/cgi-bin/dpkg.pl?host=%s' % (PASSWORD, production_machine))
+    dpkgl_file = urllib.urlopen('http://spectator:%s@cml.tunel.chservices.cz/cgi-bin/dpkg.pl?host=%s' % (spectator_password, production_machine))
     PACKAGES_LIST = getlistpackages(dpkgl_file)
     install_packages = ""
     sorted_packages = PACKAGES_LIST.items()[:]
