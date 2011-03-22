@@ -134,17 +134,19 @@ def install_production_packages(production_machine, spectator_password=''):
 	print "EXIT: %s" % (e)
 
 
-def install_project(project, project_version):
+def install_project(project, project_version=''):
     """
     This function take -be, -fe, -img for given project, if the version is not given we get the latest version from devel repository
     """
     if project_version != '':
-	specific_version = "="
+	run('apt-get install --force-yes -y %(project)s-img=%(project_version)s %(project)s-be=%(project_version)s %(project)s-fe=%(project_version)s' % {
+	    "project" : project, 
+	    "project_version" : project_version
+	    })
     else:
-	specific_version = ""
-    run('apt-get install --force-yes -y %s-img%s%s' % (project, specific_version, project_version))
-    run('apt-get install --force-yes -y %s-be%s%s' % (project, specific_version, project_version))
-    run('apt-get install --force-yes -y %s-fe%s%s' % (project, specific_version, project_version))
+	run('apt-get install --force-yes -y %(project)s-img %(project)s-be %(project)s-fe' % {
+	    "project" : project
+	    })
 
 
 def execute_diff_packages(unwanted_packages='mypage;ella'):
