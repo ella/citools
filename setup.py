@@ -32,7 +32,7 @@ setup(
     ),
 
     include_package_data = True,
-
+    
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
@@ -65,6 +65,7 @@ setup(
         "distutils.setup_keywords": [
             "dependencies_git_repositories = citools.version:validate_repositories",
             "buildbot_meta_master = citools.buildbots:validate_meta_buildbot",
+            "template_files_directories = citools.build:validate_template_files_directories",
         ],
     },
     install_requires = [
