@@ -57,7 +57,7 @@ def _replace_template(file_path, variables):
             rendered = Template(f.read().decode('utf-8')).render(**variables)
         
         f = open(file_path, 'w')
-        f.write(rendered)
+        f.write(rendered.encode('utf-8'))
         f.close()
 
 def replace_template_files(root_directory, variables=None, template_files=None, subdirs=None):
@@ -85,7 +85,8 @@ def replace_template_files(root_directory, variables=None, template_files=None, 
             dp = os.path.join(*list(chain([root_directory], subdir.split('/'))))
             if os.path.exists(dp):
                 for file in os.listdir(dp):
-                    _replace_template(os.path.join(root_directory, subdir, file), variables)
+                    if os.path.isfile(file):
+                        _replace_template(os.path.join(root_directory, subdir, file), variables)
         
 def rename_template_files(root_directory, variables=None, subdirs=None):
     """
@@ -108,7 +109,7 @@ def rename_template_files(root_directory, variables=None, subdirs=None):
         
         for fn in os.listdir(os.path.join(root_directory, dir)):
             fp = os.path.abspath(os.path.join(root_directory, dir, fn))
-            if os.path.exists(fp):
+            if os.path.exists(fp) and os.path.isfile(fp):
                 if not os.access(fp, os.R_OK|os.W_OK):
                     logging.error("Not handling file %s, unsufficient permissions (rw required)" % str(fp))
                 
