@@ -1,61 +1,32 @@
 # -*- coding: utf-8 -*-
 from ConfigParser import SafeConfigParser
-from unittest import TestCase
-
+from datetime import datetime
 import os
 from subprocess import Popen, PIPE
 from shutil import rmtree
 from tempfile import mkdtemp, mkstemp
-from datetime import datetime
+from unittest import TestCase
+
+from nose.plugins.skip import SkipTest
 
 from citools.git import retrieve_repository_metadata, fetch_repository, filter_parse_date
-
 from citools.version import get_current_branch
 
-class GitTestCase(TestCase):
-    def _create_git_repository(self):
-        # create temporary directory and initialize git repository there
-        self.repo = mkdtemp(prefix='test_git_')
-        self.oldcwd = os.getcwd()
-        os.chdir(self.repo)
-        proc = Popen(['git', 'init'], stdout=PIPE, stdin=PIPE)
-        proc.wait()
-        self.assertEquals(0, proc.returncode)
-
-        # also setup dummy name / email for this repo for tag purposes
-        proc = Popen(['git', 'config', 'user.name', 'dummy-tester'])
-        proc.wait()
-        self.assertEquals(0, proc.returncode)
-        proc = Popen(['git', 'config', 'user.email', 'dummy-tester@example.com'])
-        proc.wait()
-        self.assertEquals(0, proc.returncode)
-
-    def do_piped_command_for_success(self, command):
-        proc = Popen(command, stdout=PIPE, stdin=PIPE, stderr=PIPE)
-        stdout, stderr = proc.communicate()
-        self.assertEquals(0, proc.returncode)
-
-        return (stdout, stderr)
-
-    def commit(self, message='dummy'):
-        """ Commmit into repository and return commited revision """
-        self.do_piped_command_for_success(['git', 'commit', '-a', '-m', '%s' % message])
-        stdout = self.do_piped_command_for_success(['git', 'rev-parse', 'HEAD'])[0]
-        return stdout.strip()
-
-    def tearDown(self):
-        TestCase.tearDown(self)
-        # delete temporary repository and restore ENV vars after update
-        rmtree(self.repo)
-        os.chdir(self.oldcwd)
+from helpers import GitTestCase
 
 class TestDateParsing(TestCase):
-
+    
+    def setUp(self):
+        super(TestDateParsing, self).setUp()
+        
     def test_naive_parsed(self):
         self.assertEquals(datetime(2009, 12, 1, 20, 58, 01), filter_parse_date('Tue Dec 1 20:58:01 2009'))
 
     def test_tz_parsed(self):
         self.assertEquals(datetime(2009, 12, 1, 20, 58, 01), filter_parse_date('Tue Dec 1 20:58:01 2009 +0100'))
+    
+    def tearDown(self):
+        super(TestDateParsing, self).tearDown()
 
 class TestGitBranchParsing(TestCase):
 

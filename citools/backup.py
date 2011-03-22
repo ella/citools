@@ -126,7 +126,8 @@ class Backuper(object):
 
     def clean_backup(self):
         # delete temporary dir
-        rmtree(self.tmpdir, ignore_errors=True)
+        if getattr(self, "tmpdir", None):
+            rmtree(self.tmpdir, ignore_errors=True)
         return 0
 
     def restore_backup(self):

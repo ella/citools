@@ -4,7 +4,7 @@ from os import chdir
 import os.path
 from shutil import rmtree, Error, copy2, copystat
 import socket
-from subprocess import check_call, CalledProcessError, PIPE
+from subprocess import check_call, CalledProcessError, PIPE, Popen
 from tempfile import mkdtemp
 
 from unittest import TestCase
@@ -97,10 +97,6 @@ def copytree(src, dst, symlinks=False, ignore=None):
             errors.extend((src, dst, str(why)))
     if errors:
         raise Error, errors
-
-
-
-
 
 class MongoTestCase(TestCase):
     def setUp(self):
@@ -271,3 +267,51 @@ try:
 
 except ImportError:
     pass
+
+class GitTestCase(TestCase):
+    def _create_git_repository(self):
+        # create temporary directory and initialize git repository there
+        self.repo = mkdtemp(prefix='test_git_')
+        self.oldcwd = os.getcwd()
+        os.chdir(self.repo)
+        proc = Popen(['git', 'init'], stdout=PIPE, stdin=PIPE)
+        proc.wait()
+        self.assertEquals(0, proc.returncode)
+
+        # also setup dummy name / email for this repo for tag purposes
+        proc = Popen(['git', 'config', 'user.name', 'dummy-tester'])
+        proc.wait()
+        self.assertEquals(0, proc.returncode)
+        proc = Popen(['git', 'config', 'user.email', 'dummy-tester@example.com'])
+        proc.wait()
+        self.assertEquals(0, proc.returncode)
+
+    def do_piped_command_for_success(self, command):
+        proc = Popen(command, stdout=PIPE, stdin=PIPE, stderr=PIPE)
+        stdout, stderr = proc.communicate()
+        self.assertEquals(0, proc.returncode)
+
+        return (stdout, stderr)
+
+    def commit(self, message='dummy'):
+        """ Commmit into repository and return commited revision """
+        self.do_piped_command_for_success(['git', 'commit', '-a', '-m', '%s' % message])
+        stdout = self.do_piped_command_for_success(['git', 'rev-parse', 'HEAD'])[0]
+        return stdout.strip()
+
+    def tearDown(self):
+        TestCase.tearDown(self)
+        # delete temporary repository and restore ENV vars after update
+        rmtree(self.repo)
+        os.chdir(self.oldcwd)
+
+
+class BuildTestCase(PaverTestCase, GitTestCase):
+    PROJECT_VERSION_TAG = '3.3'
+    
+    def setUp(self):
+        PaverTestCase.setUp(self)
+        check_call(['git', 'tag', '-a', 'exproject-%s' % self.PROJECT_VERSION_TAG, '-m', '"Tagging"'])
+    
+    def tearDown(self):
+        PaverTestCase.tearDown(self)

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 
-VERSION = (0, 2, 0)
+VERSION = (0, 4, 0)
 __version__ = VERSION
 __versionstr__ = '.'.join(map(str, VERSION))
 
@@ -33,12 +33,6 @@ setup(
 
     include_package_data = True,
 
-#    buildbot_meta_master = {
-#        'host' : 'cnt-buildmaster.dev.chservices.cz',
-#        'port' : 9996,
-#        'branch' : 'master',
-#    },
-
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
@@ -65,6 +59,8 @@ setup(
             'copy_dependency_images = citools.build:CopyDependencyImages',
             'buildbot_ping_git = citools.buildbots:BuildbotPingGit',
             'save_repository_information_git = citools.git:SaveRepositoryInformationGit',
+            'replace_templates = citools.build:ReplaceTemplateFiles',
+            'rename_template_files = citools.build:RenameTemplateFiles',
         ],
         "distutils.setup_keywords": [
             "dependencies_git_repositories = citools.version:validate_repositories",

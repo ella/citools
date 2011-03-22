@@ -8,9 +8,10 @@ from datetime import datetime
 
 from distutils.core import Command
 
-from citools.version import get_git_describe, compute_version, compute_meta_version, get_git_head_hash, retrieve_current_branch
+from citools.build import ReplaceTemplateFiles, RenameTemplateFiles
 from citools.debian.control import ControlFile, Dependency
 from citools.git import fetch_repository
+from citools.version import get_git_describe, compute_version, compute_meta_version, get_git_head_hash, retrieve_current_branch
 
 
 __all__ = (
@@ -42,11 +43,24 @@ class BuildDebianPackage(Command):
         check_call(['dpkg-buildpackage', '-rfakeroot-tcp', '-us', '-uc'])
 
 
-def get_new_dependencies(dir, accepted_tag_pattern=None):
-    cfile = ControlFile(filename=os.path.join(dir, 'debian', 'control'))
+def get_new_dependencies(dir, accepted_tag_pattern=None, branch="master"):
+    
+    version = compute_version(get_git_describe(repository_directory=dir, fix_environment=True, accepted_tag_pattern=accepted_tag_pattern))
+    control = os.path.join(dir, 'debian', 'control')
+
+    version = ".".join(map(str, version))
+    
+    ### FIXME: We shall not do this again AND should only use templates
+    from citools.build import replace_template_files
+    replace_template_files(root_directory=dir, variables={
+        'branch' : branch,
+        'version' : version,
+    })
+
+    
+    cfile = ControlFile(filename=control)
     packages = cfile.get_packages()
 
-    version = ".".join(map(str, compute_version(get_git_describe(repository_directory=dir, fix_environment=True, accepted_tag_pattern=accepted_tag_pattern))))
     for p in packages:
         p.version = version
 
@@ -65,8 +79,8 @@ def fetch_new_dependencies(repository, workdir=None):
     )
     #FIXME: This should not be hardcoded
     project_pattern = "%s-[0-9]*" % repository['package_name']
-
-    deps = get_new_dependencies(repo, accepted_tag_pattern=project_pattern)
+    
+    deps = get_new_dependencies(repo, accepted_tag_pattern=project_pattern, branch=branch)
 
     return deps
 
@@ -257,6 +271,8 @@ class CreateDebianPackage(Command):
 
     sub_commands = [
         ("compute_version_git", None),
+        ("replace_templates", None),
+        ("rename_template_files", None),
         ("update_debian_version", None),
         ("bdist_deb", None),
     ]
@@ -284,6 +300,8 @@ class CreateDebianMetaPackage(Command):
 
     sub_commands = [
         ("compute_version_meta_git", None),
+        ("replace_templates", None),
+        ("rename_template_files", None),
         ("update_debian_version", None),
         ("update_dependency_versions", None),
         ("copy_dependency_images", None),
