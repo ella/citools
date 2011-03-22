@@ -83,7 +83,6 @@ def replace_template_files(root_directory, variables=None, template_files=None, 
     if subdirs:
         for subdir in subdirs:
             dp = os.path.join(*list(chain([root_directory], subdir.split('/'))))
-            print dp
             if os.path.exists(dp):
                 for file in os.listdir(dp):
                     fp = os.path.join(root_directory, subdir, file)
