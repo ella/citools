@@ -9,6 +9,7 @@ import string
 import urllib
 from datetime import datetime
 
+import paramiko
 from fabric.api import *
 from fabric.contrib.console import confirm
 #from fabric.api import run
@@ -107,7 +108,7 @@ def getlistpackageslocal(dpkgl_file):
 	    result[row[0]] = [row[0], row[1]]
     return result
 
-def install_production_packages(production_machine, spectator_password=''):
+def install_production_packages(clean_machine, production_machine, spectator_password=''):
     """
     This function get dpkg -l from url from production and install it including versions
     """
@@ -115,19 +116,62 @@ def install_production_packages(production_machine, spectator_password=''):
 
     dpkgl_file = urllib.urlopen('http://spectator:%s@cml.tunel.chservices.cz/cgi-bin/dpkg.pl?host=%s' % (spectator_password, production_machine))
     PACKAGES_LIST = getlistpackages(dpkgl_file)
-    install_packages = ""
-    sorted_packages = PACKAGES_LIST.items()[:]
-    sorted_packages.sort()
     
-    for record in sorted_packages:
-	package, version = record[1]
-	install_packages = install_packages + " %s=%s" % (package,version)
-        
-    try:
-	output = run('apt-get install --force-yes -y%s' % (install_packages,))
-    except SystemExit, e:
-	print "EXIT: %s" % (e)
+    # disable devel.repo in sources.list
+    #output = run('cat /etc/apt/sources.list')
+    #sources_list = string.split(output, "\n")
+    #for i in range(len(sources_list)):
+	#if string.find(sources_list[i], "http://devel.repo.chservices.cz") != -1:
+	 #   sources_list[i] = "#"+sources_list[i]
 
+    #sources_list = string.join(sources_list, "\n")
+    #output = run('%s > /etc/apt/sources.list' % (sources_list,))
+
+    client = paramiko.SSHClient()
+    client.load_system_host_keys()
+    clean_machine = string.split(clean_machine, "@")
+    client.connect(clean_machine[1],  username=clean_machine[0])
+
+    while True:
+	install_packages = ""
+	sorted_packages = PACKAGES_LIST.items()[:]
+	sorted_packages.sort()
+	for record in sorted_packages:
+	    package, version = record[1]
+	    if version != None:
+		install_packages = install_packages + " %s=%s" % (package,version)
+	    else:
+		install_packages = install_packages + " %s" % (package,)
+    
+	stdin, stdout, stderr = client.exec_command('apt-get install --force-yes -y%s' % (install_packages,))
+	remote_error = None
+	
+	list_depends = []
+	for o in stdout:
+	    if string.find(o, "Depends:") != -1:
+		list_depends.append(o)
+	    print "\n" + o
+
+	for e in stderr:
+	    remote_error = e
+	print "\n" + remote_error
+
+	remote_error = string.split(remote_error," ")
+	if remote_error[0] != "E:":
+	    client.close()
+	    break
+	elif remote_error[1] == "Version":
+	    package = string.replace(remote_error[4], "'", "")
+	    PACKAGES_LIST[package][1] = None
+	elif remote_error[1] == "Broken":
+	    for element in list_depends:
+		package = string.split(element, " ")[2][0:-1]
+		del(PACKAGES_LIST[package])
+	else:
+	    print "\nUnknown error"
+	    sys.exit(1)
+	
+    
 
 def install_project(project, project_version=''):
     """

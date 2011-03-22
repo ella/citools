@@ -260,7 +260,7 @@ def install_production_packages(args):
         spectator_password = args[2]+","
     except IndexError:
         spectator_password = ''
-    sh('fab install_production_packages:%(pm)s,%(sp)shost=%(cm)s' % {
+    sh('fab install_production_packages:%(cm)s,%(pm)s,%(sp)shost=%(cm)s' % {
 	"pm" : production_machine,
 	"cm" : clean_machine,
 	"sp" : spectator_password
