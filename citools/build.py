@@ -2,8 +2,9 @@ from __future__ import with_statement
 
 from distutils.command.config import config
 from distutils.core import Command
+from distutils.errors import DistutilsSetupError
 
-
+from itertools import chain
 import logging
 import os
 from shutil import copytree
@@ -53,7 +54,7 @@ def _replace_template(file_path, variables):
     if os.path.exists(file_path):
         with open(file_path, 'r') as f:
             from jinja2 import Template
-            rendered = Template(f.read()).render(**variables)
+            rendered = Template(f.read().decode('utf-8')).render(**variables)
         
         f = open(file_path, 'w')
         f.write(rendered)
@@ -81,7 +82,7 @@ def replace_template_files(root_directory, variables=None, template_files=None, 
     
     if subdirs:
         for subdir in subdirs:
-            dp = os.path.join(root_directory, subdir)
+            dp = os.path.join(*list(chain([root_directory], subdir.split('/'))))
             if os.path.exists(dp):
                 for file in os.listdir(dp):
                     _replace_template(os.path.join(root_directory, subdir, file), variables)
@@ -131,6 +132,14 @@ def get_common_variables(distribution):
     
     return variables
 
+def validate_template_files_directories(dist, attr, value):
+    pass
+#     if not isinstance(value, list):
+#        raise DistutilsSetupError(
+#            "%s must be a list or iterable" % (attr,value)
+#        )
+
+
 class ReplaceTemplateFiles(Command):
     description = "Inside files parsed as jinja2 templates, do in-place replacement of given variables"
 
@@ -144,7 +153,11 @@ class ReplaceTemplateFiles(Command):
         pass
 
     def run(self):
-        replace_template_files(root_directory=os.curdir, variables=get_common_variables(self.distribution))
+        replace_template_files(
+            root_directory=os.curdir,
+            variables=get_common_variables(self.distribution),
+            subdirs=self.distribution.template_files_directories
+        )
 
 class RenameTemplateFiles(Command):
     description = "Files named using jinja2 syntax, rename them using variable substitution."
