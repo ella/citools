@@ -131,22 +131,24 @@ def install_production_packages(clean_machine, production_machine, spectator_pas
     client.load_system_host_keys()
     clean_machine = string.split(clean_machine, "@")
     client.connect(clean_machine[1],  username=clean_machine[0])
-
+    local_list = {}
+    local_list.update(PACKAGES_LIST)
     while True:
 	install_packages = ""
-	sorted_packages = PACKAGES_LIST.items()[:]
-	sorted_packages.sort()
-	for record in sorted_packages:
-	    package, version = record[1]
+	for key in local_list:
+	    package, version = local_list[key]
 	    if version != None:
 		install_packages = install_packages + " %s=%s" % (package,version)
 	    else:
 		install_packages = install_packages + " %s" % (package,)
-    
-	stdin, stdout, stderr = client.exec_command('apt-get install --force-yes -y%s' % (install_packages,))
+	
+	command_exec = 'apt-get install -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" --force-yes -y%s' % (install_packages,)
+	#print "\nPACK: "+command_exec+"\n"
+	stdin, stdout, stderr = client.exec_command(command_exec)
 	remote_error = None
 	
 	list_depends = []
+	
 	for o in stdout:
 	    if string.find(o, "Depends:") != -1:
 		list_depends.append(o)
@@ -162,14 +164,16 @@ def install_production_packages(clean_machine, production_machine, spectator_pas
 	    break
 	elif remote_error[1] == "Version":
 	    package = string.replace(remote_error[4], "'", "")
-	    PACKAGES_LIST[package][1] = None
+	    local_list[package][1] = None
 	elif remote_error[1] == "Broken":
 	    for element in list_depends:
+		#print "\n" +str(element)+ "\n"
 		package = string.split(element, " ")[2][0:-1]
-		del(PACKAGES_LIST[package])
+		if package != '':
+		    del(local_list[package])
 	else:
 	    print "\nUnknown error"
-	    sys.exit(1)
+	    break
 	
     
 
@@ -177,14 +181,17 @@ def install_project(project, project_version=''):
     """
     This function take -be, -fe, -img for given project, if the version is not given we get the latest version from devel repository
     """
+    DEPS='%s-config python-django=1.1.1-1~bpo50+1' %(project) 
     if project_version != '':
-	run('apt-get install --force-yes -y %(project)s-img=%(project_version)s %(project)s-be=%(project_version)s %(project)s-fe=%(project_version)s' % {
+	run('apt-get install --force-yes -y %(project)s-img=%(project_version)s %(project)s-be=%(project_version)s %(project)s-fe=%(project_version)s %(DEPS)s' % {
 	    "project" : project, 
-	    "project_version" : project_version
+	    "project_version" : project_version,
+	    "DEPS" : DEPS
 	    })
     else:
-	run('apt-get install --force-yes -y %(project)s-img %(project)s-be %(project)s-fe' % {
-	    "project" : project
+	run('apt-get install --force-yes -y %(project)s-img %(project)s-be %(project)s-fe %(DEPS)s' % {
+	    "project" : project,
+	    "DEPS" : DEPS
 	    })
 
 
