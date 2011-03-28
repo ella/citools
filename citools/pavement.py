@@ -234,13 +234,13 @@ def record_packages(args):
     try:
         unwanted_packages = args[6] + ","
     except IndexError:
-        unwanted_packages = 'mypage;ella'
+        unwanted_packages = '"mypage;ella",'
     try:
         domain_username = args[7]
     except IndexError:
         domain_username = ''
 
-    sh('fab compare_vs_production:%(pm)s,%(p)s,%(pv)s%(sp)shost=%(cm)s execute_diff_packages:%(up)shost=%(prem)s upload_packages:%(du)shost=%(cm)s' % {
+    sh('fab compare_vs_production:%(cm)s,%(pm)s,%(p)s,%(pv)s%(sp)shost=%(cm)s execute_diff_packages:%(up)shost=%(prem)s upload_packages:%(du)shost=%(cm)s' % {
 	"pm" : production_machine,
 	"p" : project,
 	"pv" : project_version,
@@ -295,7 +295,7 @@ def compare_vs_production(args):
         spectator_password = args[4] + ","
     except IndexError:
         spectator_password = ''
-    sh('fab compare_vs_production:%(pm)s,%(p)s,%(pv)s%(sp)shost=%(cm)s' % {
+    sh('fab compare_vs_production:%(cm)s,%(pm)s,%(p)s,%(pv)s%(sp)shost=%(cm)s' % {
 	"pm" : production_machine,
 	"p" : project,
 	"pv" : project_version,
@@ -321,8 +321,8 @@ def execute_diff_packages(args):
     try:
         unwanted_packages = args[6] + ","
     except IndexError:
-        unwanted_packages = 'mypage;ella'
-    sh('fab compare_vs_production:%(pm)s,%(p)s,%(pv)s%(sp)shost=%(cm)s execute_diff_packages:%(up)shost=%(prem)s' % {
+        unwanted_packages = '"mypage;ella",'
+    sh('fab compare_vs_production:%(cm)s,%(pm)s,%(p)s,%(pv)s%(sp)shost=%(cm)s execute_diff_packages:%(up)shost=%(prem)s' % {
 	"pm" : production_machine,
 	"p" : project,
 	"pv" : project_version,
@@ -350,8 +350,8 @@ def download_diff_packages(args):
     try:
         unwanted_packages = args[6] + ","
     except IndexError:
-        unwanted_packages = 'mypage;ella'
-    sh('fab compare_vs_production:%(pm)s,%(p)s,%(pv)s%(sp)shost=%(cm)s execute_diff_packages:%(up)shost=%(prem)s download_diff_packages:host=%(cm)s' % {
+        unwanted_packages = '"mypage;ella",'
+    sh('fab compare_vs_production:%(cm)s,%(pm)s,%(p)s,%(pv)s%(sp)shost=%(cm)s execute_diff_packages:%(up)shost=%(prem)s download_diff_packages:host=%(cm)s' % {
 	"pm" : production_machine,
 	"p" : project,
 	"pv" : project_version,
@@ -359,4 +359,18 @@ def download_diff_packages(args):
 	"cm" : clean_machine,
 	"up" : unwanted_packages,
 	"prem" : preproduction_machine
+    })
+
+@task
+@consume_args
+def upload_packages(args):
+    clean_machine = args[0]
+    try:
+        domain_username = args[1]+","
+    except IndexError:
+        domain_username = ''
+
+    sh('fab upload_packages:%(du)shost=%(cm)s' % {
+	"cm" : clean_machine,
+	"du" : domain_username
     })

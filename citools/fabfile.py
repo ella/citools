@@ -38,13 +38,19 @@ def download_diff_packages():
     This function download packages from diff list 
     """
     global DIFF_PACKAGES_LIST
+    download_packages = ""
 
     for record_key in DIFF_PACKAGES_LIST:
 	package, version = DIFF_PACKAGES_LIST[record_key]
-	output = run('apt-get install --force-yes -y --download-only %s=%s' % (package,version))
+	if version != None:
+	    download_packages = download_packages + " %s=%s" % (package,version)
+	else:
+	    download_packages = download_packages + " %s" % (package,)
+
+    output = run('apt-get install --force-yes -y --download-only%s' % (download_packages,))
 
     ls_out = run('ls /var/cache/apt/archives/')
-    print ls_out
+    print "\n"+ls_out
     print "\nbalicky jsou stazene ve /var/cache/apt/archives/\n"
 
 def upload_packages(domain_username=''):
@@ -116,16 +122,6 @@ def install_production_packages(clean_machine, production_machine, spectator_pas
 
     dpkgl_file = urllib.urlopen('http://spectator:%s@cml.tunel.chservices.cz/cgi-bin/dpkg.pl?host=%s' % (spectator_password, production_machine))
     PACKAGES_LIST = getlistpackages(dpkgl_file)
-    
-    # disable devel.repo in sources.list
-    #output = run('cat /etc/apt/sources.list')
-    #sources_list = string.split(output, "\n")
-    #for i in range(len(sources_list)):
-	#if string.find(sources_list[i], "http://devel.repo.chservices.cz") != -1:
-	 #   sources_list[i] = "#"+sources_list[i]
-
-    #sources_list = string.join(sources_list, "\n")
-    #output = run('%s > /etc/apt/sources.list' % (sources_list,))
 
     client = paramiko.SSHClient()
     client.load_system_host_keys()
@@ -152,11 +148,15 @@ def install_production_packages(clean_machine, production_machine, spectator_pas
 	for o in stdout:
 	    if string.find(o, "Depends:") != -1:
 		list_depends.append(o)
-	    print "\n" + o
+	    print "\n" + str(o)
 
 	for e in stderr:
 	    remote_error = e
-	print "\n" + remote_error
+
+	if remote_error != None:
+	    print "\n" + str(remote_error)
+	else:
+	    break
 
 	remote_error = string.split(remote_error," ")
 	if remote_error[0] != "E:":
@@ -168,14 +168,16 @@ def install_production_packages(clean_machine, production_machine, spectator_pas
 	elif remote_error[1] == "Broken":
 	    for element in list_depends:
 		#print "\n" +str(element)+ "\n"
-		package = string.split(element, " ")[2][0:-1]
-		if package != '':
-		    del(local_list[package])
+		if string.find(element, "is to be installed") != -1:
+		    package = string.split(element, " ")[4]
+		    backport_line = run("apt-cache policy %s | grep '~bpo' | sed 's/ \{2,\}//g'" % (package))
+		    version = string.split(backport_line, " ")
+		    local_list[package][1] = version[0]
 	else:
 	    print "\nUnknown error"
 	    break
 	
-    
+    client.close()
 
 def install_project(project, project_version=''):
     """
@@ -247,9 +249,12 @@ def clean_diff(unwanted_packages):
     
     for record in delete_records:
 	del(DIFF_PACKAGES_LIST[record])
+    # for debuging
+    for r in DIFF_PACKAGES_LIST:
+	print "\n"+str(DIFF_PACKAGES_LIST[r])
     
 
-def compare_vs_production(production_machine, project, project_version='', spectator_password=''):
+def compare_vs_production(clean_machine, production_machine, project, project_version='', spectator_password=''):
     """
     This function send packages to operation repository, this is difference local dpkg -l and dpkg -l from URL 
     First argument is the name of production_machine for that you want dpkg -l
@@ -259,8 +264,12 @@ def compare_vs_production(production_machine, project, project_version='', spect
 
     # This script is running on clear machine
     # get dpkg -l from url from production and install it including versions
-    install_production_packages(production_machine, spectator_password)
+    install_production_packages(clean_machine, production_machine, spectator_password)
     
     # Take -be, -fe, -img for given project, if the version is not given we get the latest version from devel repository
-    run('rm /var/cache/apt/archives/* &>/dev/null')
+    try:
+	run('rm /var/cache/apt/archives/*.deb')
+    except:
+	print "\nwarning: can not remove non-existent files or directory\n"
+    
     install_project(project, project_version)
