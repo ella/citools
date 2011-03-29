@@ -49,7 +49,7 @@ def download_diff_packages():
 
     output = run('apt-get install --force-yes -y --download-only%s' % (download_packages,))
 
-    ls_out = run('ls /var/cache/apt/archives/')
+    ls_out = run("ls /var/cache/apt/archives/ | grep '.deb'")
     print "\n"+ls_out
     print "\nbalicky jsou stazene ve /var/cache/apt/archives/\n"
 
@@ -171,8 +171,16 @@ def install_production_packages(clean_machine, production_machine, spectator_pas
 		if string.find(element, "is to be installed") != -1:
 		    package = string.split(element, " ")[4]
 		    backport_line = run("apt-cache policy %s | grep '~bpo' | sed 's/ \{2,\}//g'" % (package))
-		    version = string.split(backport_line, " ")
-		    local_list[package][1] = version[0]
+		    versions_list = string.replace(backport_line, "\n", " ")
+		    versions_list = string.replace(versions_list, "\r", " ")
+		    versions = string.split(versions_list, " ")
+		    #print versions
+		    for element in versions:
+			if string.find(element, "~bpo") != -1:
+			    #print element
+			    local_list[package][1] = element
+			    break
+		    
 	else:
 	    print "\nUnknown error"
 	    break
@@ -239,13 +247,16 @@ def clean_diff(unwanted_packages):
     for record in DIFF_PACKAGES_LIST:
 	if record in delete_records:
 	    continue
-	url = run("apt-cache policy %s | grep http:// | sed 's/ \{2,\}//'" % (DIFF_PACKAGES_LIST[record][0]))
-	try:
-	    url = string.split(url, " ")[1]
-	except IndexError:
-	    continue
-	if url in DISABLE_URL:
-	    delete_records.append(record)
+	urls = run("apt-cache policy %s | grep http:// | sed 's/ \{2,\}//'" % (DIFF_PACKAGES_LIST[record][0]))
+	urls = string.split(urls, "\n")
+	for url in urls:
+	    try:
+		url = string.split(url, " ")[1]
+	    except IndexError:
+		continue
+	    if url in DISABLE_URL:
+		delete_records.append(record)
+		break
     
     for record in delete_records:
 	del(DIFF_PACKAGES_LIST[record])
