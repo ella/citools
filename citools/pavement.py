@@ -216,44 +216,10 @@ def ping_buildmaster():
 
     buildbot_ping_git(options.host, int(options.port), options.branch)
 
-@task
-@consume_args
-def record_packages(args):
-    production_machine = args[0]
-    preproduction_machine = args[1]
-    clean_machine = args[2]
-    project = args[3]
-    try:
-        project_version = args[4] + ","
-    except IndexError:
-        project_version = ''
-    try:
-        spectator_password = args[5] + ","
-    except IndexError:
-        spectator_password = ""
-    try:
-        unwanted_packages = args[6] + ","
-    except IndexError:
-        unwanted_packages = '"mypage;ella",'
-    try:
-        domain_username = args[7]
-    except IndexError:
-        domain_username = ''
-
-    sh('fab compare_vs_production:%(cm)s,%(pm)s,%(p)s,%(pv)s%(sp)shost=%(cm)s execute_diff_packages:%(up)shost=%(prem)s upload_packages:%(du)shost=%(cm)s' % {
-	"pm" : production_machine,
-	"p" : project,
-	"pv" : project_version,
-	"sp" : spectator_password,
-	"cm" : clean_machine,
-	"up" : unwanted_packages,
-	"prem" : preproduction_machine,
-	"du" : domain_username
-    })
 
 @task
 @consume_args
-def install_production_packages(args):
+def install_production_packages(args, options):
     production_machine = args[0]
     clean_machine = args[1]
     try:
@@ -268,7 +234,7 @@ def install_production_packages(args):
 
 @task
 @consume_args
-def install_project(args):
+def install_project(args, options):
     clean_machine = args[0]
     project = args[1]
     try:
@@ -282,95 +248,111 @@ def install_project(args):
     })
 
 @task
-@consume_args
-def compare_vs_production(args):
-    production_machine = args[0]
-    clean_machine = args[1]
-    project = args[2]
-    try:
-        project_version = args[3] + ","
-    except IndexError:
-        project_version = ''
-    try:
-        spectator_password = args[4] + ","
-    except IndexError:
-        spectator_password = ''
-    sh('fab compare_vs_production:%(cm)s,%(pm)s,%(p)s,%(pv)s%(sp)shost=%(cm)s' % {
-	"pm" : production_machine,
-	"p" : project,
-	"pv" : project_version,
-	"cm" : clean_machine,
-	"sp" : spectator_password
-    })
+@cmdopts([
+    ('production-machine=', 'p', 'Production machine'),
+    ('clean-machine=', 'c', 'Clean machine'),
+    ('project=', 'j', 'Project'),
+    ('project-version=', 'v', 'Project version'),
+    ('spectator-password=', 's', 'Spectator password')
+])
+def compare_vs_production(options):
+    production_machine = getattr(options, "production_machine")
+    clean_machine = getattr(options, "clean_machine")
+    project = getattr(options, "project")
+    project_version = getattr(options, "project_version", '')
+    spectator_password = getattr(options, "spectator_password", '')
+    # import your fabfile
+    fabfile = import_fabfile()
+    # invoke fabric task
+    args = (clean_machine, production_machine, project, project_version, spectator_password)
+    options.packages_list = fab(clean_machine, 
+				fabfile['compare_vs_production'], 
+				resolve,
+				args
+				)
+
 
 @task
-@consume_args
-def execute_diff_packages(args):
-    production_machine = args[0]
-    preproduction_machine = args[1]
-    clean_machine = args[2]
-    project = args[3]
-    try:
-        project_version = args[4] + ","
-    except IndexError:
-        project_version = ''
-    try:
-        spectator_password = args[5] + ","
-    except IndexError:
-        spectator_password = ""
-    try:
-        unwanted_packages = args[6] + ","
-    except IndexError:
-        unwanted_packages = '"mypage;ella",'
-    sh('fab compare_vs_production:%(cm)s,%(pm)s,%(p)s,%(pv)s%(sp)shost=%(cm)s execute_diff_packages:%(up)shost=%(prem)s' % {
-	"pm" : production_machine,
-	"p" : project,
-	"pv" : project_version,
-	"sp" : spectator_password,
-	"cm" : clean_machine,
-	"up" : unwanted_packages,
-	"prem" : preproduction_machine
-    })
+@cmdopts([
+    ('preproduction-machine=', 'r', 'Preproduction machine'),
+    ('unwanted-packages=', 'u', 'Unwanted packages')
+])
+@needs('compare_vs_production')
+def execute_diff_packages(options):
+    preproduction_machine = getattr(options, "preproduction_machine")
+    unwanted_packages = getattr(options, "unwanted_packages", "mypage;ella")
+
+    # import your fabfile
+    fabfile = import_fabfile()
+    # invoke fabric task
+    args = (options.packages_list, unwanted_packages)
+    options.diff_packages_list = fab(preproduction_machine, 
+				 fabfile['execute_diff_packages'], 
+				 resolve,
+				 args 
+				 )
+
 
 @task
-@consume_args
-def download_diff_packages(args):
-    production_machine = args[0]
-    preproduction_machine = args[1]
-    clean_machine = args[2]
-    project = args[3]
-    try:
-        project_version = args[4] + ","
-    except IndexError:
-        project_version = ''
-    try:
-        spectator_password = args[5] + ","
-    except IndexError:
-        spectator_password = ""
-    try:
-        unwanted_packages = args[6] + ","
-    except IndexError:
-        unwanted_packages = '"mypage;ella",'
-    sh('fab compare_vs_production:%(cm)s,%(pm)s,%(p)s,%(pv)s%(sp)shost=%(cm)s execute_diff_packages:%(up)shost=%(prem)s download_diff_packages:host=%(cm)s' % {
-	"pm" : production_machine,
-	"p" : project,
-	"pv" : project_version,
-	"sp" : spectator_password,
-	"cm" : clean_machine,
-	"up" : unwanted_packages,
-	"prem" : preproduction_machine
-    })
+@needs('execute_diff_packages')
+def download_diff_packages(options):
+    clean_machine = getattr(options, "clean_machine")
+    # import your fabfile
+    fabfile = import_fabfile()
+    # invoke fabric task
+    args = (options.diff_packages_list,)
+    options.packages_for_upload = fab(clean_machine, 
+				 fabfile['download_diff_packages'], 
+				 resolve,
+				 args
+				 )
+  
 
 @task
-@consume_args
-def upload_packages(args):
-    clean_machine = args[0]
-    try:
-        domain_username = args[1]+","
-    except IndexError:
-        domain_username = ''
+@cmdopts([
+    ('domain_username=', 'd', 'Domain username')
+])
+@needs('download_diff_packages')
+def upload_packages(options):
+    clean_machine = getattr(options, "clean_machine")
+    domain_username = getattr(options, "domain_username", '')
+    # import your fabfile
+    fabfile = import_fabfile()
+    # invoke fabric task
+    args = (options.packages_for_upload, domain_username)
+    fab(clean_machine, fabfile['upload_packages'], resolve, args)
+    
 
-    sh('fab upload_packages:%(du)shost=%(cm)s' % {
-	"cm" : clean_machine,
-	"du" : domain_username
-    })
+
+# fabric wrapper snippets
+
+def resolve(host):
+    "write similar function for eg: resolving from aws or ssh_config"
+    from fabric.main import find_fabfile, load_fabfile
+    from fabric.network import normalize
+    from fabric import state
+
+    return (host,) + normalize(host)
+
+def fab(host, cmd, resolve=resolve, args=(), kwargs={}):
+    "call one fabric task"
+    from fabric.main import find_fabfile, load_fabfile
+    from fabric.network import normalize
+    from fabric import state
+
+    host_string, username, hostname, port = resolve(host)
+    state.env.host_string = host_string
+    state.env.host = hostname
+    state.env.user = username
+    state.env.port = port
+    return cmd(*args, **kwargs)
+
+def import_fabfile(fabfile='fabfile.py'):
+    "you have to call this first to enable fabric tasks"
+    from fabric.main import find_fabfile, load_fabfile
+    from fabric.network import normalize
+    from fabric import state
+
+    state.env.fabfile = fabfile
+    _, fabfile = load_fabfile(find_fabfile())
+    return fabfile

@@ -30,14 +30,14 @@ DISABLE_URL = (
 	      "http://backports.repo.chservices.cz",
 )
 
-DIFF_PACKAGES_LIST = {}
-PACKAGES_LIST = {}
+#DIFF_PACKAGES_LIST = {}
+#PACKAGES_LIST = {}
 
-def download_diff_packages():
+def download_diff_packages(diff_packages_list):
     """
     This function download packages from diff list 
     """
-    global DIFF_PACKAGES_LIST
+    DIFF_PACKAGES_LIST = diff_packages_list
     download_packages = ""
 
     for record_key in DIFF_PACKAGES_LIST:
@@ -52,19 +52,23 @@ def download_diff_packages():
     ls_out = run("ls /var/cache/apt/archives/ | grep '.deb'")
     print "\n"+ls_out
     print "\nbalicky jsou stazene ve /var/cache/apt/archives/\n"
+    return ls_out
 
-def upload_packages(domain_username=''):
+def upload_packages(packages_for_upload, domain_username=''):
     """
     This function uploaded packages to operation repo and it is running on clean machine 
     Has one argument the windows domain name 
     """
-    download_diff_packages()
 
     if domain_username =='':
 	USER = raw_input('domain user name: ')
     else:
 	USER = domain_username
     
+    packages_for_upload = string.replace(packages_for_upload, "\r", "")
+    packages_for_upload = string.split(packages_for_upload, "\n")
+    packages_for_upload = string.join(packages_for_upload, " ")
+
     output = run('lftp %(scheme)s://%(user)s@%(url)s -e "\n\
 		  set ftp:ssl-protect-data yes\n\
 		  lcd %(ldir)s\n\
@@ -72,7 +76,7 @@ def upload_packages(domain_username=''):
 		  cd %(rdir)s\n\
 		  mkdir -p %(today)s\n\
 		  cd %(today)s\n\
-		  mput *deb\n\
+		  mput %(packages_for_upload)s\n\
 		  ls\n\
 		  exit" | awk "{print $9}"' % {
 			    "scheme": SCHEME,
@@ -80,7 +84,8 @@ def upload_packages(domain_username=''):
 			    "url": URL,
 			    "ldir": LDIR,
 			    "rdir": RDIR,
-			    "today": TODAY
+			    "today": TODAY,
+			    "packages_for_upload": packages_for_upload
 			    })
     if output.return_code != 0:
 	abort("Aborting, can not upload packages:")
@@ -118,7 +123,6 @@ def install_production_packages(clean_machine, production_machine, spectator_pas
     """
     This function get dpkg -l from url from production and install it including versions
     """
-    global PACKAGES_LIST
 
     dpkgl_file = urllib.urlopen('http://spectator:%s@cml.tunel.chservices.cz/cgi-bin/dpkg.pl?host=%s' % (spectator_password, production_machine))
     PACKAGES_LIST = getlistpackages(dpkgl_file)
@@ -186,6 +190,7 @@ def install_production_packages(clean_machine, production_machine, spectator_pas
 	    break
 	
     client.close()
+    return PACKAGES_LIST
 
 def install_project(project, project_version=''):
     """
@@ -205,20 +210,22 @@ def install_project(project, project_version=''):
 	    })
 
 
-def execute_diff_packages(unwanted_packages='mypage;ella'):
+def execute_diff_packages(packages_list, unwanted_packages='mypage;ella'):
     """
     This function execute diff preproduction and production dpkg -l list and remove packages from diff that are in standard debian repository
     it is running on preproduction machine
     """
-    execute_diff()
-    clean_diff(unwanted_packages)
+    DIFF_PACKAGES_LIST = execute_diff(packages_list)
+    DIFF_PACKAGES_LIST = clean_diff(DIFF_PACKAGES_LIST, unwanted_packages)
 
-def execute_diff():
+    return DIFF_PACKAGES_LIST
+
+def execute_diff(packages_list):
     """
     This function execute diff local and production dpkg -l list
     """
-    global DIFF_PACKAGES_LIST
-    global PACKAGES_LIST
+    DIFF_PACKAGES_LIST = {}
+    PACKAGES_LIST = packages_list
 
     local_dpkgl = run("dpkg -l | grep '^ii  ' | sed 's/^ii  //' | sed 's/ \{2,\}/;/g'")
     packages_list_local = getlistpackageslocal(local_dpkgl)
@@ -229,12 +236,14 @@ def execute_diff():
 	elif packages_list_local[record][1] != PACKAGES_LIST[record][1]:
 	    DIFF_PACKAGES_LIST[record] = packages_list_local[record]
 
-def clean_diff(unwanted_packages):
+    return DIFF_PACKAGES_LIST
+
+def clean_diff(diff_packages_list, unwanted_packages):
     """
     This function remove packages from diff that are in standard debian repository 
     """
-    global DIFF_PACKAGES_LIST
-
+    
+    DIFF_PACKAGES_LIST = diff_packages_list
     # remove unwanted packages
     delete_records = []
     unwanted_records = string.split(unwanted_packages, ";")
@@ -263,6 +272,8 @@ def clean_diff(unwanted_packages):
     # for debuging
     for r in DIFF_PACKAGES_LIST:
 	print "\n"+str(DIFF_PACKAGES_LIST[r])
+
+    return DIFF_PACKAGES_LIST
     
 
 def compare_vs_production(clean_machine, production_machine, project, project_version='', spectator_password=''):
@@ -275,7 +286,7 @@ def compare_vs_production(clean_machine, production_machine, project, project_ve
 
     # This script is running on clear machine
     # get dpkg -l from url from production and install it including versions
-    install_production_packages(clean_machine, production_machine, spectator_password)
+    PACKAGES_LIST = install_production_packages(clean_machine, production_machine, spectator_password)
     
     # Take -be, -fe, -img for given project, if the version is not given we get the latest version from devel repository
     try:
@@ -284,3 +295,4 @@ def compare_vs_production(clean_machine, production_machine, project, project_ve
 	print "\nwarning: can not remove non-existent files or directory\n"
     
     install_project(project, project_version)
+    return PACKAGES_LIST
