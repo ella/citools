@@ -219,21 +219,6 @@ def ping_buildmaster():
 
 @task
 @consume_args
-def install_production_packages(args, options):
-    production_machine = args[0]
-    clean_machine = args[1]
-    try:
-        spectator_password = args[2]+","
-    except IndexError:
-        spectator_password = ''
-    sh('fab install_production_packages:%(cm)s,%(pm)s,%(sp)shost=%(cm)s' % {
-	"pm" : production_machine,
-	"cm" : clean_machine,
-	"sp" : spectator_password
-    })
-
-@task
-@consume_args
 def install_project(args, options):
     clean_machine = args[0]
     project = args[1]
@@ -251,22 +236,18 @@ def install_project(args, options):
 @cmdopts([
     ('production-machine=', 'p', 'Production machine'),
     ('clean-machine=', 'c', 'Clean machine'),
-    ('project=', 'j', 'Project'),
-    ('project-version=', 'v', 'Project version'),
     ('spectator-password=', 's', 'Spectator password')
 ])
-def compare_vs_production(options):
+def install_production_packages(options):
     production_machine = getattr(options, "production_machine")
     clean_machine = getattr(options, "clean_machine")
-    project = getattr(options, "project")
-    project_version = getattr(options, "project_version", '')
     spectator_password = getattr(options, "spectator_password", '')
     # import your fabfile
     fabfile = import_fabfile()
     # invoke fabric task
-    args = (clean_machine, production_machine, project, project_version, spectator_password)
+    args = (clean_machine, production_machine, spectator_password)
     options.packages_list = fab(clean_machine, 
-				fabfile['compare_vs_production'], 
+				fabfile['install_production_packages'], 
 				resolve,
 				args
 				)
@@ -277,11 +258,10 @@ def compare_vs_production(options):
     ('preproduction-machine=', 'r', 'Preproduction machine'),
     ('unwanted-packages=', 'u', 'Unwanted packages')
 ])
-@needs('compare_vs_production')
+@needs('install_production_packages')
 def execute_diff_packages(options):
     preproduction_machine = getattr(options, "preproduction_machine")
     unwanted_packages = getattr(options, "unwanted_packages", "mypage;ella")
-
     # import your fabfile
     fabfile = import_fabfile()
     # invoke fabric task
@@ -294,13 +274,19 @@ def execute_diff_packages(options):
 
 
 @task
+@cmdopts([
+    ('project=', 'j', 'Project'),
+    ('project-version=', 'v', 'Project version'),
+])
 @needs('execute_diff_packages')
 def download_diff_packages(options):
     clean_machine = getattr(options, "clean_machine")
+    project = getattr(options, "project")
+    project_version = getattr(options, "project_version", '')
     # import your fabfile
     fabfile = import_fabfile()
     # invoke fabric task
-    args = (options.diff_packages_list,)
+    args = (options.diff_packages_list, project, project_version)
     options.packages_for_upload = fab(clean_machine, 
 				 fabfile['download_diff_packages'], 
 				 resolve,

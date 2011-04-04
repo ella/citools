@@ -33,10 +33,17 @@ DISABLE_URL = (
 #DIFF_PACKAGES_LIST = {}
 #PACKAGES_LIST = {}
 
-def download_diff_packages(diff_packages_list):
+def download_diff_packages(diff_packages_list, project, project_version=''):
     """
-    This function download packages from diff list 
+    This function install projet and download packages from diff list 
     """
+    try:
+	run('rm /var/cache/apt/archives/*.deb')
+    except:
+	print "\nwarning: can not remove non-existent files or directory\n"
+    
+    install_project(project, project_version)
+    
     DIFF_PACKAGES_LIST = diff_packages_list
     download_packages = ""
 
@@ -257,6 +264,9 @@ def clean_diff(diff_packages_list, unwanted_packages):
 	if record in delete_records:
 	    continue
 	urls = run("apt-cache policy %s | grep http:// | sed 's/ \{2,\}//'" % (DIFF_PACKAGES_LIST[record][0]))
+	if string.find(urls, "E: Cache is out of sync") != -1:
+	    delete_records.append(record)
+	    continue
 	urls = string.split(urls, "\n")
 	for url in urls:
 	    try:
@@ -274,25 +284,3 @@ def clean_diff(diff_packages_list, unwanted_packages):
 	print "\n"+str(DIFF_PACKAGES_LIST[r])
 
     return DIFF_PACKAGES_LIST
-    
-
-def compare_vs_production(clean_machine, production_machine, project, project_version='', spectator_password=''):
-    """
-    This function send packages to operation repository, this is difference local dpkg -l and dpkg -l from URL 
-    First argument is the name of production_machine for that you want dpkg -l
-    Second argument is the name of project
-    Third and fourth are optional, third is project version and fourth is windows domain user name
-    """
-
-    # This script is running on clear machine
-    # get dpkg -l from url from production and install it including versions
-    PACKAGES_LIST = install_production_packages(clean_machine, production_machine, spectator_password)
-    
-    # Take -be, -fe, -img for given project, if the version is not given we get the latest version from devel repository
-    try:
-	run('rm /var/cache/apt/archives/*.deb')
-    except:
-	print "\nwarning: can not remove non-existent files or directory\n"
-    
-    install_project(project, project_version)
-    return PACKAGES_LIST
