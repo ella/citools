@@ -38,9 +38,9 @@ def download_diff_packages(diff_packages_list, project, project_version=''):
     This function install projet and download packages from diff list 
     """
     try:
-	run('rm /var/cache/apt/archives/*.deb')
+        run('rm /var/cache/apt/archives/*.deb')
     except:
-	print "\nwarning: can not remove non-existent files or directory\n"
+        print "\nwarning: can not remove non-existent files or directory\n"
     
     install_project(project, project_version)
     
@@ -48,11 +48,11 @@ def download_diff_packages(diff_packages_list, project, project_version=''):
     download_packages = ""
 
     for record_key in DIFF_PACKAGES_LIST:
-	package, version = DIFF_PACKAGES_LIST[record_key]
-	if version != None:
-	    download_packages = download_packages + " %s=%s" % (package,version)
-	else:
-	    download_packages = download_packages + " %s" % (package,)
+        package, version = DIFF_PACKAGES_LIST[record_key]
+        if version != None:
+            download_packages = download_packages + " %s=%s" % (package,version)
+        else:
+            download_packages = download_packages + " %s" % (package,)
 
     output = run('apt-get install --force-yes -y --download-only%s' % (download_packages,))
 
@@ -68,9 +68,9 @@ def upload_packages(packages_for_upload, domain_username=''):
     """
 
     if domain_username =='':
-	USER = raw_input('domain user name: ')
+        USER = raw_input('domain user name: ')
     else:
-	USER = domain_username
+        USER = domain_username
     
     packages_for_upload = string.replace(packages_for_upload, "\r", "")
     packages_for_upload = string.split(packages_for_upload, "\n")
@@ -95,7 +95,7 @@ def upload_packages(packages_for_upload, domain_username=''):
 			    "packages_for_upload": packages_for_upload
 			    })
     if output.return_code != 0:
-	abort("Aborting, can not upload packages:")
+        abort("Aborting, can not upload packages:")
     print "\nbalicky jsou uploadnute v %s://%s/%s/%s" % (SCHEME,URL,RDIR,TODAY)
 
 
@@ -106,10 +106,10 @@ def getlistpackages(dpkgl_file):
 
     result = {}
     for line in dpkgl_file:
-	row = string.split(line, ";")
-	if len(row) > 1:
-	    #package, version = checkversion(row[0], row[1])
-	    result[row[0]] = [row[0], row[1]]
+        row = string.split(line, ";")
+        if len(row) > 1:
+            #package, version = checkversion(row[0], row[1])
+            result[row[0]] = [row[0], row[1]]
     dpkgl_file.close()
     return result
 
@@ -121,9 +121,9 @@ def getlistpackageslocal(dpkgl_file):
     result = {}
     dpkgl_array = string.split(dpkgl_file, "\n")
     for line in dpkgl_array:
-	row = string.split(line, ";")
-	if len(row) > 1: 
-	    result[row[0]] = [row[0], row[1]]
+        row = string.split(line, ";")
+        if len(row) > 1: 
+            result[row[0]] = [row[0], row[1]]
     return result
 
 def install_production_packages(clean_machine, production_machine, spectator_password=''):
@@ -141,60 +141,60 @@ def install_production_packages(clean_machine, production_machine, spectator_pas
     local_list = {}
     local_list.update(PACKAGES_LIST)
     while True:
-	install_packages = ""
-	for key in local_list:
-	    package, version = local_list[key]
-	    if version != None:
-		install_packages = install_packages + " %s=%s" % (package,version)
-	    else:
-		install_packages = install_packages + " %s" % (package,)
+        install_packages = ""
+        for key in local_list:
+            package, version = local_list[key]
+            if version != None:
+                install_packages = install_packages + " %s=%s" % (package,version)
+            else:
+                install_packages = install_packages + " %s" % (package,)
 	
-	command_exec = 'apt-get install -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" --force-yes -y%s' % (install_packages,)
-	#print "\nPACK: "+command_exec+"\n"
-	stdin, stdout, stderr = client.exec_command(command_exec)
-	remote_error = None
+        command_exec = 'apt-get install -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" --force-yes -y%s' % (install_packages,)
+        #print "\nPACK: "+command_exec+"\n"
+        stdin, stdout, stderr = client.exec_command(command_exec)
+        remote_error = None
 	
-	list_depends = []
+        list_depends = []
 	
-	for o in stdout:
-	    if string.find(o, "Depends:") != -1:
-		list_depends.append(o)
-	    print "\n" + str(o)
+        for o in stdout:
+            if string.find(o, "Depends:") != -1:
+                list_depends.append(o)
+            print "\n" + str(o)
 
-	for e in stderr:
-	    remote_error = e
+        for e in stderr:
+            remote_error = e
 
-	if remote_error != None:
-	    print "\n" + str(remote_error)
-	else:
-	    break
+        if remote_error != None:
+            print "\n" + str(remote_error)
+        else:
+            break
 
-	remote_error = string.split(remote_error," ")
-	if remote_error[0] != "E:":
-	    client.close()
-	    break
-	elif remote_error[1] == "Version":
-	    package = string.replace(remote_error[4], "'", "")
-	    local_list[package][1] = None
-	elif remote_error[1] == "Broken":
-	    for element in list_depends:
-		#print "\n" +str(element)+ "\n"
-		if string.find(element, "is to be installed") != -1:
-		    package = string.split(element, " ")[4]
-		    backport_line = run("apt-cache policy %s | grep '~bpo' | sed 's/ \{2,\}//g'" % (package))
-		    versions_list = string.replace(backport_line, "\n", " ")
-		    versions_list = string.replace(versions_list, "\r", " ")
-		    versions = string.split(versions_list, " ")
-		    #print versions
-		    for element in versions:
-			if string.find(element, "~bpo") != -1:
-			    #print element
-			    local_list[package][1] = element
-			    break
+        remote_error = string.split(remote_error," ")
+        if remote_error[0] != "E:":
+            client.close()
+            break
+        elif remote_error[1] == "Version":
+            package = string.replace(remote_error[4], "'", "")
+            local_list[package][1] = None
+        elif remote_error[1] == "Broken":
+            for element in list_depends:
+                #print "\n" +str(element)+ "\n"
+                if string.find(element, "is to be installed") != -1:
+                    package = string.split(element, " ")[4]
+                    backport_line = run("apt-cache policy %s | grep '~bpo' | sed 's/ \{2,\}//g'" % (package))
+                    versions_list = string.replace(backport_line, "\n", " ")
+                    versions_list = string.replace(versions_list, "\r", " ")
+                    versions = string.split(versions_list, " ")
+                    #print versions
+                    for element in versions:
+                        if string.find(element, "~bpo") != -1:
+                            #print element
+                            local_list[package][1] = element
+                            break
 		    
-	else:
-	    print "\nUnknown error"
-	    break
+        else:
+            print "\nUnknown error"
+            break
 	
     client.close()
     return PACKAGES_LIST
@@ -205,13 +205,13 @@ def install_project(project, project_version=''):
     """
     DEPS='%s-config python-django=1.1.1-1~bpo50+1' %(project) 
     if project_version != '':
-	run('apt-get install --force-yes -y %(project)s-img=%(project_version)s %(project)s-be=%(project_version)s %(project)s-fe=%(project_version)s %(DEPS)s' % {
+        run('apt-get install --force-yes -y %(project)s-img=%(project_version)s %(project)s-be=%(project_version)s %(project)s-fe=%(project_version)s %(DEPS)s' % {
 	    "project" : project, 
 	    "project_version" : project_version,
 	    "DEPS" : DEPS
 	    })
     else:
-	run('apt-get install --force-yes -y %(project)s-img %(project)s-be %(project)s-fe %(DEPS)s' % {
+        run('apt-get install --force-yes -y %(project)s-img %(project)s-be %(project)s-fe %(DEPS)s' % {
 	    "project" : project,
 	    "DEPS" : DEPS
 	    })
@@ -238,10 +238,10 @@ def execute_diff(packages_list):
     packages_list_local = getlistpackageslocal(local_dpkgl)
     
     for record in packages_list_local:
-	if PACKAGES_LIST.has_key(record) == False:
-	    DIFF_PACKAGES_LIST[record] = packages_list_local[record]
-	elif packages_list_local[record][1] != PACKAGES_LIST[record][1]:
-	    DIFF_PACKAGES_LIST[record] = packages_list_local[record]
+        if PACKAGES_LIST.has_key(record) == False:
+            DIFF_PACKAGES_LIST[record] = packages_list_local[record]
+        elif packages_list_local[record][1] != PACKAGES_LIST[record][1]:
+            DIFF_PACKAGES_LIST[record] = packages_list_local[record]
 
     return DIFF_PACKAGES_LIST
 
@@ -255,32 +255,37 @@ def clean_diff(diff_packages_list, unwanted_packages):
     delete_records = []
     unwanted_records = string.split(unwanted_packages, ";")
     for record in DIFF_PACKAGES_LIST:
-	for element in unwanted_records:
-	    if string.find(record, element) != -1:
-		delete_records.append(record)
+        for element in unwanted_records:
+            if string.find(record, element) != -1:
+                delete_records.append(record)
 
     # remove packages from standard debian repository
     for record in DIFF_PACKAGES_LIST:
-	if record in delete_records:
-	    continue
-	urls = run("apt-cache policy %s | grep http:// | sed 's/ \{2,\}//'" % (DIFF_PACKAGES_LIST[record][0]))
-	if string.find(urls, "E: Cache is out of sync") != -1:
-	    delete_records.append(record)
-	    continue
-	urls = string.split(urls, "\n")
-	for url in urls:
-	    try:
-		url = string.split(url, " ")[1]
-	    except IndexError:
-		continue
-	    if url in DISABLE_URL:
-		delete_records.append(record)
-		break
+        if record in delete_records:
+            continue
+        urls = run("apt-cache policy %s | grep http:// | sed 's/ \{2,\}//'" % (DIFF_PACKAGES_LIST[record][0]))
+        if string.find(urls, "E: Cache is out of sync") != -1:
+            delete_records.append(record)
+            continue
+        urls = string.split(urls, "\n")
+        disable_url = 0
+        enable_url = 0
+        for url in urls:
+            try:
+                url = string.split(url, " ")[1]
+            except IndexError:
+                continue
+            if url in DISABLE_URL:
+                disable_url = disable_url + 1
+            else:
+                enable_url = enable_url + 1
+        if disable_url > 0 and enable_url == 0:
+            delete_records.append(record)
     
     for record in delete_records:
-	del(DIFF_PACKAGES_LIST[record])
+        del(DIFF_PACKAGES_LIST[record])
     # for debuging
     for r in DIFF_PACKAGES_LIST:
-	print "\n"+str(DIFF_PACKAGES_LIST[r])
+        print "\n"+str(DIFF_PACKAGES_LIST[r])
 
     return DIFF_PACKAGES_LIST
