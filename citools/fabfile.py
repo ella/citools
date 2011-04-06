@@ -57,8 +57,46 @@ def download_diff_packages(diff_packages_list, project, project_version=''):
     output = run('apt-get install --force-yes -y --download-only%s' % (download_packages,))
 
     ls_out = run("ls /var/cache/apt/archives/ | grep '.deb'")
-    print "\n"+ls_out
-    print "\nbalicky jsou stazene ve /var/cache/apt/archives/\n"
+    
+    ls_out = string.replace(ls_out, "\r", "")
+    ls_out = string.split(ls_out, "\n")
+    
+    while True:
+        print "\n"
+        for package in ls_out:
+            print "%s" % (package)
+        print "\nbalicky jsou stazene ve /var/cache/apt/archives/\n"
+        
+        answer = raw_input('Chces uploadnout tyto baliky, oznacit baliky k odebrani, oznacit baliky k uploadu, neuploadovat (y/d/c/n): ')
+        if answer == 'y':
+            break
+        elif answer == 'd':
+            packages = raw_input('zadej baliky oddelene strednikem: ')
+            packages = string.split(packages, ";")
+            for package in packages:
+                try:
+                    ls_out.remove(package)
+                except ValueError:
+                    print "\nW: Balik %s nebyl v seznamu" % (package)
+        elif answer == 'c':
+            packages = raw_input('zadej baliky oddelene strednikem: ')
+            packages = string.split(packages, ";")
+            upload_packages = []
+            error = 0
+            for package in packages:
+                if package in ls_out:
+                    upload_packages.append(package)
+                else:
+                    print "\nW: Balik %s nebyl v seznamu" % (package)
+                    error = 1
+            if error == 0:
+                ls_out = upload_packages
+        elif answer == 'n':
+            print "\nEXIT: Baliky nebudou uploadnuty\n"
+            sys.exit(1)
+        else:
+            continue
+    
     return ls_out
 
 def upload_packages(packages_for_upload, domain_username=''):
@@ -72,8 +110,7 @@ def upload_packages(packages_for_upload, domain_username=''):
     else:
         USER = domain_username
     
-    packages_for_upload = string.replace(packages_for_upload, "\r", "")
-    packages_for_upload = string.split(packages_for_upload, "\n")
+    
     packages_for_upload = string.join(packages_for_upload, " ")
 
     output = run('lftp %(scheme)s://%(user)s@%(url)s -e "\n\
