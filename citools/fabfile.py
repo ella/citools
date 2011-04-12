@@ -95,6 +95,7 @@ def download_diff_packages(diff_packages_list, project, project_version=''):
             print "\nEXIT: Baliky nebudou uploadnuty\n"
             sys.exit(1)
         else:
+            print "\nW: Spatna volba"
             continue
     
     return ls_out
@@ -167,7 +168,13 @@ def install_production_packages(clean_machine, production_machine, spectator_pas
     """
     This function get dpkg -l from url from production and install it including versions
     """
-
+    sys_info = run("uname -a")
+    sys_info = string.split(sys_info, " ")
+    architecture = sys_info[-2]
+    if string.find(architecture, "i386") == -1 and string.find(architecture, "i686") == -1:
+        print "\nUnsupported architecture\n" 
+        sys.exit(1)
+    
     dpkgl_file = urllib.urlopen('http://spectator:%s@cml.tunel.chservices.cz/cgi-bin/dpkg.pl?host=%s' % (spectator_password, production_machine))
     PACKAGES_LIST = getlistpackages(dpkgl_file)
 
@@ -228,13 +235,20 @@ def install_production_packages(clean_machine, production_machine, spectator_pas
                             #print element
                             local_list[package][1] = element
                             break
-		    
+        elif string.find(string.join(remote_error, " "), "has no installation candidate") != -1:
+            package = remote_error[2]
+            del(local_list[package])
+        elif string.find(string.join(remote_error, " "), "Couldn't find package") != -1:
+            package = string.replace(remote_error[-1], "\n", "")
+            del(local_list[package])
+        
         else:
             print "\nUnknown error"
             break
 	
     client.close()
     return PACKAGES_LIST
+
 
 def install_project(project, project_version=''):
     """
