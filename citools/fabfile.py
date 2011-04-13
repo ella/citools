@@ -10,8 +10,8 @@ import urllib
 from datetime import datetime
 
 import paramiko
-from fabric.api import *
-from fabric.contrib.console import confirm
+from fabric.api import run, abort
+#from fabric.contrib.console import confirm
 #from fabric.api import run
 
 #config for uploading packages
@@ -29,9 +29,6 @@ DISABLE_URL = (
 	      "http://apt.repo.chservices.cz",
 	      "http://backports.repo.chservices.cz",
 )
-
-#DIFF_PACKAGES_LIST = {}
-#PACKAGES_LIST = {}
 
 def download_diff_packages(diff_packages_list, project, project_version=''):
     """
@@ -100,7 +97,7 @@ def download_diff_packages(diff_packages_list, project, project_version=''):
     
     return ls_out
 
-def upload_packages(packages_for_upload, domain_username=''):
+def upload_packages(packages_for_upload, domain_username='', rdir = '', upload_url = ''):
     """
     This function uploaded packages to operation repo and it is running on clean machine 
     Has one argument the windows domain name 
@@ -110,6 +107,12 @@ def upload_packages(packages_for_upload, domain_username=''):
         USER = raw_input('domain user name: ')
     else:
         USER = domain_username
+    
+    if rdir == '':
+        rdir = RDIR
+        
+    if upload_url == '':
+        url = URL
     
     
     packages_for_upload = string.join(packages_for_upload, " ")
@@ -126,9 +129,9 @@ def upload_packages(packages_for_upload, domain_username=''):
 		  exit" | awk "{print $9}"' % {
 			    "scheme": SCHEME,
 			    "user": USER,
-			    "url": URL,
+			    "url": url,
 			    "ldir": LDIR,
-			    "rdir": RDIR,
+			    "rdir": rdir,
 			    "today": TODAY,
 			    "packages_for_upload": packages_for_upload
 			    })

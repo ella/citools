@@ -256,7 +256,7 @@ def install_production_packages(options):
 @task
 @cmdopts([
     ('preproduction-machine=', 'r', 'Preproduction machine'),
-    ('unwanted-packages=', 'u', 'Unwanted packages')
+    ('unwanted-packages=', 'n', 'Unwanted packages')
 ])
 @needs('install_production_packages')
 def execute_diff_packages(options):
@@ -296,20 +296,24 @@ def download_diff_packages(options):
 
 @task
 @cmdopts([
-    ('domain_username=', 'd', 'Domain username')
+    ('domain-username=', 'd', 'Domain username'),
+    ('directory-structure=', 's', 'Directory structure for upload packages'),
+    ('upload-url=', 'u', 'Url for upload')
 ])
 @needs('download_diff_packages')
 def upload_packages(options):
     clean_machine = getattr(options, "clean_machine")
     domain_username = getattr(options, "domain_username", '')
+    upload_url = getattr(options, "upload_url", '')
+    directory_structure = getattr(options, "directory_structure", '')
     # import your fabfile
     fabfile = import_fabfile()
     # invoke fabric task
-    args = (options.packages_for_upload, domain_username)
-    fab(clean_machine, fabfile['upload_packages'], resolve, args)
+    args = (options.packages_for_upload,)
+    kwargs = { "rdir" : directory_structure, "upload_url" : upload_url, "domain_username" :  domain_username }
+    fab(clean_machine, fabfile['upload_packages'], resolve, args, kwargs)
     
-
-
+    
 # fabric wrapper snippets
 
 def resolve(host):
