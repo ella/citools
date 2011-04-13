@@ -218,21 +218,6 @@ def ping_buildmaster():
 
 
 @task
-@consume_args
-def install_project(args, options):
-    clean_machine = args[0]
-    project = args[1]
-    try:
-        project_version = args[2]+","
-    except IndexError:
-        project_version = ''
-    sh('fab install_project:%(p)s,%(pv)shost=%(cm)s' % {
-	"cm" : clean_machine,
-	"p" : project,
-	"pv" : project_version
-    })
-
-@task
 @cmdopts([
     ('production-machine=', 'p', 'Production machine'),
     ('clean-machine=', 'c', 'Clean machine'),

@@ -339,7 +339,7 @@ def clean_diff(diff_packages_list, unwanted_packages):
     for record in delete_records:
         del(DIFF_PACKAGES_LIST[record])
     # for debuging
-    for r in DIFF_PACKAGES_LIST:
-        print "\n"+str(DIFF_PACKAGES_LIST[r])
+    #for r in DIFF_PACKAGES_LIST:
+    #    print "\n"+str(DIFF_PACKAGES_LIST[r])
 
     return DIFF_PACKAGES_LIST
