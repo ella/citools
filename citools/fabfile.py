@@ -1,8 +1,8 @@
 """
 This script take list of packages from operation list and list of packages from preprodution
-then do diff and send residual packages to production repo
-Using fab compare_vs_production:args,host=cleanmachine_address execute_diff_packages:args,host=preproduction_address upload_packages:args,host=cleanmachine_address 
-Example fab compare_vs_production:hp9fe1.cent,centrum-mypage-auto,host=clean.dev.chservices.cz execute_diff_packages:host=cms-hp9fe.dev.chservices.cz upload_packages:host=clean.dev.chservices.cz
+then do diff and send residual packages to production repo and instal project you want
+Using by paver call: paver upload_packages -p production_machine -c clean_machine -j project -r preproduction -d domain user name
+Example upload_packages -p hp9fe1 -c root@cnt-insttester-michal-splachovator.dev.chservices.cz -j centrum-mypage-auto -r root@cms-hp9fe.dev.chservices.cz -d name.surname 
 """
 import sys
 import string
@@ -100,9 +100,13 @@ def download_diff_packages(diff_packages_list, project, project_version=''):
 def upload_packages(packages_for_upload, domain_username='', rdir = '', upload_url = ''):
     """
     This function uploaded packages to operation repo and it is running on clean machine 
-    Has one argument the windows domain name 
+    Has one required argument the windows domain name
+    Has two optional arguments url for upload packages and directory structure for saving uploaded packages
     """
-
+    output_install_lftp = run('apt-get install --force-yes -y lftp')
+    if output_install_lftp.return_code != 0:
+        abort("Aborting, can not install lftp")
+        
     if domain_username =='':
         USER = raw_input('domain user name: ')
     else:
@@ -113,9 +117,10 @@ def upload_packages(packages_for_upload, domain_username='', rdir = '', upload_u
         
     if upload_url == '':
         url = URL
+    else:
+        url = upload_url
     
-    
-    packages_for_upload = string.join(packages_for_upload, " ")
+    upload_packages = string.join(packages_for_upload, " ")
 
     output = run('lftp %(scheme)s://%(user)s@%(url)s -e "\n\
 		  set ftp:ssl-protect-data yes\n\
@@ -133,11 +138,15 @@ def upload_packages(packages_for_upload, domain_username='', rdir = '', upload_u
 			    "ldir": LDIR,
 			    "rdir": rdir,
 			    "today": TODAY,
-			    "packages_for_upload": packages_for_upload
+			    "packages_for_upload": upload_packages
 			    })
     if output.return_code != 0:
         abort("Aborting, can not upload packages:")
-    print "\nbalicky jsou uploadnute v %s://%s/%s/%s" % (SCHEME,URL,RDIR,TODAY)
+    
+    print "\n"
+    for package in packages_for_upload:
+        print "%s" % (package)
+    print "\nbalicky jsou uploadnute v %s://%s/%s/%s" % (SCHEME,url,rdir,TODAY)
 
 
 def getlistpackages(dpkgl_file):
@@ -170,6 +179,7 @@ def getlistpackageslocal(dpkgl_file):
 def install_production_packages(clean_machine, production_machine, spectator_password=''):
     """
     This function get dpkg -l from url from production and install it including versions
+    Has two required arguments the clean machine for installing production packages and production machine for comparation packages
     """
     sys_info = run("uname -a")
     sys_info = string.split(sys_info, " ")
@@ -283,7 +293,7 @@ def execute_diff_packages(packages_list, unwanted_packages='mypage;ella'):
 
 def execute_diff(packages_list):
     """
-    This function execute diff local and production dpkg -l list
+    This function execute diff preproduction and production dpkg -l list
     """
     DIFF_PACKAGES_LIST = {}
     PACKAGES_LIST = packages_list

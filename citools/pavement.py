@@ -282,7 +282,7 @@ def download_diff_packages(options):
 @task
 @cmdopts([
     ('domain-username=', 'd', 'Domain username'),
-    ('directory-structure=', 's', 'Directory structure for upload packages'),
+    ('directory-structure=', 't', 'Directory structure for upload packages'),
     ('upload-url=', 'u', 'Url for upload')
 ])
 @needs('download_diff_packages')
