@@ -188,6 +188,8 @@ def install_production_packages(clean_machine, production_machine, spectator_pas
         print "\nUnsupported architecture\n" 
         sys.exit(1)
     
+    run("apt-get update")
+    
     dpkgl_file = urllib.urlopen('http://spectator:%s@cml.tunel.chservices.cz/cgi-bin/dpkg.pl?host=%s' % (spectator_password, production_machine))
     PACKAGES_LIST = getlistpackages(dpkgl_file)
 
