@@ -92,7 +92,6 @@ def test_dependency_parses_versioned_packages():
     assert_equals('ella', dep.name)
     assert_equals('1.32', dep.version)
 
-
 def test_dependency_parses_packages_with_signs():
     package = 'centrum-python-package1-aaa (= 0.1.0), centrum-python-package2-aaa (= 0.2.1)'
     parsed = PackageParagraph('').parse_depends(package)
@@ -107,6 +106,22 @@ def test_dependency_parses_packages_with_signs():
     assert_equals('=', dep.sign)
     assert_equals('centrum-python-package2-aaa', dep.name)
     assert_equals('0.2.1', dep.version)
+
+def test_dependency_parses_package_with_rich_chars():
+    package = 'centrum-python-package1 (= 1.0.3~bpo50+1), centrum-python-package2 (= 1.0.3)'
+    parsed = PackageParagraph('').parse_depends(package)
+    assert_equals(2, len(parsed))
+
+    dep = parsed[0]
+    assert_equals('=', dep.sign)
+    assert_equals('centrum-python-package1', dep.name)
+    assert_equals('1.0.3~bpo50+1', dep.version)
+
+    dep = parsed[1]
+    assert_equals('=', dep.sign)
+    assert_equals('centrum-python-package2', dep.name)
+    assert_equals('1.0.3', dep.version)
+
 
 def test_dependency_parses_versioned_package():
     package = 'python-django-1.1'

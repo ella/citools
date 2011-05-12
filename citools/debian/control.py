@@ -134,7 +134,10 @@ class PackageParagraph(ControlFileParagraph):
 
     def parse_depends(self, value):
         package_name = Word(alphanums + '.-${}:')('name')
-        version = Word(nums + '.-')('version')
+        version = Combine(
+            Word(nums + '.-') + Optional(Literal('~') + Word(alphanums + '+'))
+        )('version')
+
         sign = reduce(or_, map(Literal, ('>=', '<=', '=',)))('sign')
         dependency = (
                 (
