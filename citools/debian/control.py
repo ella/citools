@@ -2,8 +2,8 @@ from operator import or_
 from pyparsing import (
         ParserElement, LineEnd, CharsNotIn, Group, Word,
         alphanums, Literal, Combine, ZeroOrMore, nums,
-        Optional, delimitedList, restOfLine
-    )
+        Optional, delimitedList, restOfLine,
+        Or)
 from itertools import chain
 
 class ControlFileParagraph(dict):
@@ -117,7 +117,7 @@ class PackageParagraph(ControlFileParagraph):
     def parse_provides(self, value):
         package_name = Word(alphanums + '.-${}:')('name')
         version = Word(nums + '.-')('version')
-        sign = reduce(or_, map(Literal, ('>=', '<=', '=',)))('sign')
+        sign = Or(map(Literal, ('>', '<', '>=', '<=', '=',)))('sign')
         provider = (
                 (
                     package_name +
@@ -138,7 +138,7 @@ class PackageParagraph(ControlFileParagraph):
             Word(nums + '.-') + Optional(Literal('~') + Word(alphanums + '+'))
         )('version')
 
-        sign = reduce(or_, map(Literal, ('>=', '<=', '=',)))('sign')
+        sign = Or(map(Literal, ('>', '<', '>=', '<=', '=',)))('sign')
         dependency = (
                 (
                     package_name +

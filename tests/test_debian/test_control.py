@@ -69,13 +69,29 @@ def test_package_parses_versioned_package():
     assert_equals(True, parsed.is_versioned())
 
 def test_dependency_parses_version_info():
-    package = 'python-django (>= 1.1)'
+    package = 'python-django (>= 1.1), foo-bar (< 1.2), bar-baz (> 1.0), baz-egg (= 2.0)'
     parsed = PackageParagraph('').parse_depends(package)
-    assert_equals(1, len(parsed))
+    assert_equals(4, len(parsed))
+
     dep = parsed[0]
     assert_equals('>=', dep.sign)
     assert_equals('python-django', dep.name)
     assert_equals('1.1', dep.version)
+
+    dep = parsed[1]
+    assert_equals('<', dep.sign)
+    assert_equals('foo-bar', dep.name)
+    assert_equals('1.2', dep.version)
+
+    dep = parsed[2]
+    assert_equals('>', dep.sign)
+    assert_equals('bar-baz', dep.name)
+    assert_equals('1.0', dep.version)
+
+    dep = parsed[3]
+    assert_equals('=', dep.sign)
+    assert_equals('baz-egg', dep.name)
+    assert_equals('2.0', dep.version)
 
 def test_dependency_parses_versioned_packages():
     package = 'python-django-1.1, ella (1.32)'
