@@ -147,6 +147,9 @@ def upload_packages(packages_for_upload, domain_username='', rdir = '', upload_u
     for package in packages_for_upload:
         print "%s" % (package)
     print "\nbalicky jsou uploadnute v %s://%s/%s/%s" % (SCHEME,url,rdir,TODAY)
+    
+    print "\nPROVADI SE REBOOT STROJE...\n"
+    run("halt")
 
 
 def getlistpackages(dpkgl_file):
@@ -181,6 +184,21 @@ def install_production_packages(clean_machine, production_machine, spectator_pas
     This function get dpkg -l from url from production and install it including versions
     Has two required arguments the clean machine for installing production packages and production machine for comparation packages
     """
+    
+    # Do you want rebbot clean machine?
+    while True:
+        answer = raw_input('Mam provest reboot stroje? (y/n): ')
+        if answer == 'y':
+            print "\nPROVADI SE REBOOT STROJE...\n"
+            run("halt")
+            sys.exit(0)
+        elif answer == 'n':
+            break
+        else:
+            print "\nW: Spatna volba"
+            continue
+    
+    # Run this task on supported architecture? 
     sys_info = run("uname -a")
     sys_info = string.split(sys_info, " ")
     architecture = sys_info[-2]
