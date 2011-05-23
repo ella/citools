@@ -1,5 +1,4 @@
 import os
-import sys
 from os.path import join, exists
 from subprocess import check_call
 
@@ -302,7 +301,7 @@ def upload_packages(options):
 # fabric wrapper snippets
 
 def resolve(host):
-    "write similar function for eg: resolving from aws or ssh_config"
+    """write similar function for eg: resolving from aws or ssh_config"""
     from fabric.main import find_fabfile, load_fabfile
     from fabric.network import normalize
     from fabric import state
@@ -310,7 +309,7 @@ def resolve(host):
     return (host,) + normalize(host)
 
 def fab(host, cmd, resolve=resolve, args=(), kwargs={}):
-    "call one fabric task"
+    """call one fabric task"""
     from fabric.main import find_fabfile, load_fabfile
     from fabric.network import normalize
     from fabric import state
@@ -323,7 +322,7 @@ def fab(host, cmd, resolve=resolve, args=(), kwargs={}):
     return cmd(*args, **kwargs)
 
 def import_fabfile(fabfile='fabfile.py'):
-    "you have to call this first to enable fabric tasks"
+    """ you have to call this first to enable fabric tasks"""
     from fabric.main import find_fabfile, load_fabfile
     from fabric.network import normalize
     from fabric import state
@@ -331,3 +330,29 @@ def import_fabfile(fabfile='fabfile.py'):
     state.env.fabfile = fabfile
     _, fabfile = load_fabfile(find_fabfile())
     return fabfile
+
+
+@task
+@needs('paver.doctools.html')
+def publish_docs(options):
+    """Build documentation and move it into docroot"""
+    builtdocs = path("docs") / options.sphinx.builddir / "html"
+    if getattr(options, "docroot", None):
+        docroot = options.docroot
+    else:
+        docroot = path(getattr(options, "docroot", '/big/docs/')) / options.name
+        if getattr(options, "doc_use_branch_dir", False):
+            from citools.version import get_current_branch
+            branch = get_current_branch()
+            if branch != getattr(options, "doc_root_branch", "automation"):
+                docroot = docroot / "branches" / branch
+
+    docroot.rmtree()
+    builtdocs.move(destdir)
+    destdir.chmod(getattr(options, "doc_dir_chmod", 0777))
+
+    for dirpath, dirnames, filenames in walk(destdir):
+        for d in dirnames:
+            chmod(join(dirpath, d), getattr(options, "doc_dir_chmod", 0777))
+        for f in filenames:
+            chmod(join(dirpath, f), getattr(options, "doc_file_chmod", 0444))
