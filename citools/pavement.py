@@ -342,8 +342,8 @@ def publish_docs(options):
     else:
         docroot = path(getattr(options, "docroot", '/big/docs/')) / options.name
         if getattr(options, "doc_use_branch_dir", False):
-            from citools.version import get_current_branch
-            branch = get_current_branch()
+            from citools.version import retrieve_current_branch
+            branch = retrieve_current_branch()
             if branch != getattr(options, "doc_root_branch", "automation"):
                 docroot = docroot / "branches" / branch
 
