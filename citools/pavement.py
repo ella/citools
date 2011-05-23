@@ -336,20 +336,20 @@ def publish_docs(options):
     """Build documentation and move it into docroot"""
     builtdocs = path("docs") / options.sphinx.builddir / "html"
     if getattr(options, "docroot", None):
-        docroot = options.docroot
+        destdir = options.docroot
     else:
-        docroot = path(getattr(options, "docroot", '/big/docs/')) / options.name
-        if getattr(options, "doc_use_branch_dir", False):
-            from citools.version import retrieve_current_branch
-            branch = retrieve_current_branch()
-            if branch != getattr(options, "doc_root_branch", "automation"):
-                docroot = docroot / "branches" / branch
+        destdir = path(getattr(options, "docroot", '/big/docs/')) / options.name
+    if getattr(options, "doc_use_branch_dir", False):
+        from citools.version import retrieve_current_branch
+        branch = retrieve_current_branch()
+        if branch != getattr(options, "doc_root_branch", "automation"):
+            destdir = destdir / "branches" / branch
 
-    docroot.rmtree()
+    destdir.rmtree()
     builtdocs.move(destdir)
     destdir.chmod(getattr(options, "doc_dir_chmod", 0777))
 
-    for dirpath, dirnames, filenames in walk(destdir):
+    for dirpath, dirnames, filenames in os.walk(destdir):
         for d in dirnames:
             chmod(join(dirpath, d), getattr(options, "doc_dir_chmod", 0777))
         for f in filenames:
