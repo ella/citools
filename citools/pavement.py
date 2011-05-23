@@ -351,6 +351,6 @@ def publish_docs(options):
 
     for dirpath, dirnames, filenames in os.walk(destdir):
         for d in dirnames:
-            chmod(join(dirpath, d), getattr(options, "doc_dir_chmod", 0777))
+            os.chmod(join(dirpath, d), getattr(options, "doc_dir_chmod", 0777))
         for f in filenames:
-            chmod(join(dirpath, f), getattr(options, "doc_file_chmod", 0444))
+            os.chmod(join(dirpath, f), getattr(options, "doc_file_chmod", 0444))
