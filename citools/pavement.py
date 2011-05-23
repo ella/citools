@@ -219,17 +219,15 @@ def ping_buildmaster():
 @task
 @cmdopts([
     ('production-machine=', 'p', 'Production machine'),
-    ('clean-machine=', 'c', 'Clean machine'),
-    ('spectator-password=', 's', 'Spectator password')
+    ('clean-machine=', 'c', 'Clean machine')
 ])
 def install_production_packages(options):
     production_machine = getattr(options, "production_machine")
     clean_machine = getattr(options, "clean_machine")
-    spectator_password = getattr(options, "spectator_password", '')
     # import your fabfile
     fabfile = import_fabfile()
     # invoke fabric task
-    args = (clean_machine, production_machine, spectator_password)
+    args = (clean_machine, production_machine)
     options.packages_list = fab(clean_machine, 
 				fabfile['install_production_packages'], 
 				resolve,
