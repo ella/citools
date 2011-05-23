@@ -179,7 +179,7 @@ def getlistpackageslocal(dpkgl_file):
             result[row[0]] = [row[0], row[1]]
     return result
 
-def install_production_packages(clean_machine, production_machine, spectator_password=''):
+def install_production_packages(clean_machine, production_machine):
     """
     This function get dpkg -l from url from production and install it including versions
     Has two required arguments the clean machine for installing production packages and production machine for comparation packages
@@ -208,7 +208,7 @@ def install_production_packages(clean_machine, production_machine, spectator_pas
     
     run("apt-get update")
     
-    dpkgl_file = urllib.urlopen('http://spectator:%s@cml.tunel.chservices.cz/cgi-bin/dpkg.pl?host=%s' % (spectator_password, production_machine))
+    dpkgl_file = urllib.urlopen('http://cml.tunel.chservices.cz/cgi-bin/dpkg.pl?host=%s' % (production_machine,))
     PACKAGES_LIST = getlistpackages(dpkgl_file)
 
     client = paramiko.SSHClient()
