@@ -224,8 +224,12 @@ def ping_buildmaster():
 def install_production_packages(options):
     production_machine = getattr(options, "production_machine")
     clean_machine = getattr(options, "clean_machine")
+    fabfile_name = getattr(options, "fabfile_name", '')
     # import your fabfile
-    fabfile = import_fabfile()
+    if fabfile_name != '':
+        fabfile = import_fabfile(fabfile_name)
+    else:
+        fabfile = import_fabfile()
     # invoke fabric task
     args = (clean_machine, production_machine)
     options.packages_list = fab(clean_machine, 
@@ -244,8 +248,12 @@ def install_production_packages(options):
 def execute_diff_packages(options):
     preproduction_machine = getattr(options, "preproduction_machine")
     unwanted_packages = getattr(options, "unwanted_packages", "mypage;ella")
+    fabfile_name = getattr(options, "fabfile_name", '')
     # import your fabfile
-    fabfile = import_fabfile()
+    if fabfile_name != '':
+        fabfile = import_fabfile(fabfile_name)
+    else:
+        fabfile = import_fabfile()
     # invoke fabric task
     args = (options.packages_list, unwanted_packages)
     options.diff_packages_list = fab(preproduction_machine, 
@@ -265,8 +273,12 @@ def download_diff_packages(options):
     clean_machine = getattr(options, "clean_machine")
     project = getattr(options, "project")
     project_version = getattr(options, "project_version", '')
+    fabfile_name = getattr(options, "fabfile_name", '')
     # import your fabfile
-    fabfile = import_fabfile()
+    if fabfile_name != '':
+        fabfile = import_fabfile(fabfile_name)
+    else:
+        fabfile = import_fabfile()
     # invoke fabric task
     args = (options.diff_packages_list, project, project_version)
     options.packages_for_upload = fab(clean_machine, 
@@ -288,8 +300,12 @@ def upload_packages(options):
     domain_username = getattr(options, "domain_username", '')
     upload_url = getattr(options, "upload_url", '')
     directory_structure = getattr(options, "directory_structure", '')
+    fabfile_name = getattr(options, "fabfile_name", '')
     # import your fabfile
-    fabfile = import_fabfile()
+    if fabfile_name != '':
+        fabfile = import_fabfile(fabfile_name)
+    else:
+        fabfile = import_fabfile()
     # invoke fabric task
     args = (options.packages_for_upload,)
     kwargs = { "rdir" : directory_structure, "upload_url" : upload_url, "domain_username" :  domain_username }
