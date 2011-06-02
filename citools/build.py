@@ -120,7 +120,7 @@ def rename_template_files(root_directory, variables=None, subdirs=None):
 
 def get_common_variables(distribution):
     variables = {
-        'version' : distribution.get_version()
+        'version' : distribution.version if hasattr(distribution, "version") and distribution.version else distribution.get_version()
     }
     
     probe = getattr(distribution.metadata, "template_attributes", [
