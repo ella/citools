@@ -138,10 +138,11 @@ def compute_version_git(options):
 
     dist.metadata.branch_suffix = options.branch_suffix = branch_suffix
 
+    print options.version_str
+
 @task
 @needs('compute_version_git')
 def compute_version(options):
-    dist = _get_distribution()
     pass
 
 @task
