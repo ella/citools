@@ -191,14 +191,9 @@ def upload_debian_package(options):
             options.ftp_directory.split("/"), package_path, package_name, port=getattr(options, "ftp_port", 21))
 
 @task
-@needs(['replace_version', 'update_debian_version', 'build_debian_package'])
-#@cmdopts([
-#    ('upload-ftp', 'l', 'Upload packages to FTP server'),
-#])
+@needs(['replace_version', 'replace_templates', 'rename_template_files', 'update_debian_version', 'build_debian_package'])
 def create_debian_package(options):
     pass
-#    if getattr(options, "upload_ftp", None):
-#        call_task(upload_debian_package(options))
 
 @task
 @cmdopts([
