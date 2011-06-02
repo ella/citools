@@ -2,7 +2,10 @@ import os
 from os.path import join, exists
 from subprocess import check_call
 
+from citools.build import rename_template_files as _rename_template_files, replace_template_files, get_common_variables
+
 from paver.easy import *
+from paver.setuputils import _get_distribution
 
 @task
 @consume_args
@@ -119,21 +122,26 @@ def bump():
     ('accepted-tag-pattern=', 't', 'Tag pattern passed to git describe for version recognition'),
 ])
 def compute_version_git(options):
-    from citools.version import get_git_describe, compute_version
+    from citools.version import get_git_describe, compute_version, get_branch_suffix, retrieve_current_branch
 
     if not getattr(options, "accepted_tag_pattern", None):
         options.accepted_tag_pattern = "%s-[0-9]*" % options.name
 
+    dist = _get_distribution()
+
     current_git_version = get_git_describe(accepted_tag_pattern=options.accepted_tag_pattern)
+    branch_suffix = get_branch_suffix(dist.metadata, retrieve_current_branch())
+
 
     options.version = compute_version(current_git_version)
-    options.version_str = '.'.join(map(str, options.version))
+    dist.metadata.version = options.version_str = '.'.join(map(str, options.version))
 
-    print options.version_str
+    dist.metadata.branch_suffix = options.branch_suffix = branch_suffix
 
 @task
 @needs('compute_version_git')
 def compute_version(options):
+    dist = _get_distribution()
     pass
 
 @task
@@ -142,7 +150,6 @@ def update_debian_version(options):
     update_debianization(options.version)
 
 @task
-@needs(['compute_version'])
 def replace_version(options):
     from citools.version import replace_inits, replace_scripts, replace_version_in_file
 
@@ -153,7 +160,7 @@ def replace_version(options):
 
     if os.path.exists('pavement.py'):
         replace_version_in_file(options.version, 'pavement.py')
-    
+
 
 @task
 def build_debian_package(options):
@@ -191,7 +198,27 @@ def upload_debian_package(options):
             options.ftp_directory.split("/"), package_path, package_name, port=getattr(options, "ftp_port", 21))
 
 @task
-@needs(['replace_version', 'replace_templates', 'rename_template_files', 'update_debian_version', 'build_debian_package'])
+def rename_template_files():
+    _rename_template_files(root_directory=os.curdir, variables=get_common_variables(_get_distribution()))
+
+@task
+def replace_templates():
+    replace_template_files(
+        root_directory=os.curdir,
+        variables=get_common_variables(_get_distribution()),
+        subdirs=getattr(options, "template_files_directories", None)
+    )
+
+
+@task
+@needs([
+        'compute_version',
+        'replace_version',
+        'replace_templates',
+        'rename_template_files',
+        'update_debian_version',
+        'build_debian_package'
+])
 def create_debian_package(options):
     pass
 
