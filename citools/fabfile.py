@@ -287,7 +287,7 @@ def install_project(project, project_version=''):
     """
     This function take -be, -fe, -img for given project, if the version is not given we get the latest version from devel repository
     """
-    DEPS='%s-config python-django=1.1.1-1~bpo50+1' %(project) 
+    DEPS='%s-config' %(project) 
     if project_version != '':
         run('apt-get install --force-yes -y %(project)s-img=%(project_version)s %(project)s-be=%(project_version)s %(project)s-fe=%(project_version)s %(DEPS)s' % {
 	    "project" : project, 
