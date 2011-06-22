@@ -30,7 +30,7 @@ DISABLE_URL = (
 	      "http://backports.repo.chservices.cz",
 )
 
-def download_diff_packages(diff_packages_list, project, project_version=''):
+def download_diff_packages(diff_packages_list, project, project_version='', project_only='no'):
     """
     This function install projet and download packages from diff list 
     """
@@ -50,8 +50,8 @@ def download_diff_packages(diff_packages_list, project, project_version=''):
             download_packages = download_packages + " %s=%s" % (package,version)
         else:
             download_packages = download_packages + " %s" % (package,)
-
-    output = run('apt-get install --force-yes -y --download-only%s' % (download_packages,))
+    if project_only == 'no':
+        output = run('apt-get install --force-yes -y --download-only%s' % (download_packages,))
 
     ls_out = run("ls /var/cache/apt/archives/ | grep '.deb'")
     
