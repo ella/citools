@@ -347,7 +347,7 @@ def clean_diff(diff_packages_list, unwanted_packages):
     for record in DIFF_PACKAGES_LIST:
         if record in delete_records:
             continue
-        urls = run("apt-cache policy %s | grep 'http://.*/content' | sed 's/ \{2,\}//'" % (DIFF_PACKAGES_LIST[record][0]))
+        urls = run("apt-cache policy %s | grep 'http://.*[ ].*/content' | sed 's/ \{2,\}//'" % (DIFF_PACKAGES_LIST[record][0]))
         if urls == "" or urls == None:
             delete_records.append(record)
             continue
