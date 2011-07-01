@@ -242,11 +242,13 @@ def ping_buildmaster():
 @task
 @cmdopts([
     ('production-machine=', 'p', 'Production machine'),
-    ('clean-machine=', 'c', 'Clean machine')
+    ('clean-machine=', 'c', 'Clean machine'),
+    ('production-backend-machine=', 'b', 'Production backend machine')
 ])
 def install_production_packages(options):
     production_machine = getattr(options, "production_machine")
     clean_machine = getattr(options, "clean_machine")
+    production_backend_machine = getattr(options, "production_backend_machine", None)
     fabfile_name = getattr(options, "fabfile_name", '')
     # import your fabfile
     if fabfile_name != '':
@@ -254,7 +256,7 @@ def install_production_packages(options):
     else:
         fabfile = import_fabfile()
     # invoke fabric task
-    args = (clean_machine, production_machine)
+    args = (clean_machine, production_machine, production_backend_machine)
     options.packages_list = fab(clean_machine, 
 				fabfile['install_production_packages'], 
 				resolve,
