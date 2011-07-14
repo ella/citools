@@ -55,7 +55,7 @@ def _replace_template(file_path, variables):
         with open(file_path, 'r') as f:
             from jinja2 import Template
             rendered = Template(f.read().decode('utf-8')).render(**variables)
-        
+
         f = open(file_path, 'w')
         f.write(rendered.encode('utf-8'))
         f.close()
@@ -122,7 +122,7 @@ def get_common_variables(distribution):
     variables = {
         'version' : distribution.version if hasattr(distribution, "version") and distribution.version else distribution.get_version()
     }
-    
+
     probe = getattr(distribution.metadata, "template_attributes", [
         "branch_suffix",
         "dependency_versions",
@@ -149,15 +149,19 @@ class ReplaceTemplateFiles(Command):
     ]
 
     def initialize_options(self):
-        pass
+        self.build_lib = None
 
     def finalize_options(self):
-        pass
+        self.set_undefined_options('build',
+                                    ('build_lib', 'build_lib'))
 
     def run(self):
+        vars = get_common_variables(self.distribution)
+        vars['build_lib'] = self.build_lib
+
         replace_template_files(
             root_directory=os.curdir,
-            variables=get_common_variables(self.distribution),
+            variables=vars,
             subdirs=getattr(self.distribution, "template_files_directories", None)
         )
 
