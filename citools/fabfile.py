@@ -171,7 +171,7 @@ def getlistpackageslocal(dpkgl_file):
             result[row[0]] = [row[0], row[1]]
     return result
 
-def install_production_packages(clean_machine, production_machine, production_backend_machine=None):
+def install_production_packages(clean_machine, production_machine, production_backend_machine=None, enabled_architectures=None):
     """
     This function get dpkg -l from url from production and install it including versions
     Has two required arguments the clean machine for installing production packages and production machine for comparation packages
@@ -190,13 +190,14 @@ def install_production_packages(clean_machine, production_machine, production_ba
             print "\nW: Spatna volba"
             continue
     
-    # Run this task on supported architecture? 
-    sys_info = run("uname -a")
-    sys_info = string.split(sys_info, " ")
-    architecture = sys_info[-2]
-    if string.find(architecture, "i386") == -1 and string.find(architecture, "i686") == -1:
-        print "\nUnsupported architecture\n" 
-        sys.exit(1)
+    # Run this task on supported architecture?
+    if enabled_architectures:
+        sys_info = run("uname -a")
+        sys_info = string.split(sys_info, " ")
+        architecture = sys_info[-2]
+        if architecture not in enabled_architecture.split(";"):
+            print "\nUnsupported architecture\n" 
+            sys.exit(1)
     
     run("apt-get update")
     
@@ -284,17 +285,15 @@ def install_project(project, project_version=''):
     """
     This function take -be, -fe, -img for given project, if the version is not given we get the latest version from devel repository
     """
-    DEPS='%s-config' %(project) 
+     
     if project_version != '':
-        run('apt-get install --force-yes -y %(project)s-img=%(project_version)s %(project)s-be=%(project_version)s %(project)s-fe=%(project_version)s %(DEPS)s' % {
+        run('apt-get install --force-yes -y %(project)s-img=%(project_version)s %(project)s-be=%(project_version)s %(project)s-fe=%(project_version)s %(project)s-config=%(project_version)s' % {
 	    "project" : project, 
-	    "project_version" : project_version,
-	    "DEPS" : DEPS
+	    "project_version" : project_version
 	    })
     else:
-        run('apt-get install --force-yes -y %(project)s-img %(project)s-be %(project)s-fe %(DEPS)s' % {
-	    "project" : project,
-	    "DEPS" : DEPS
+        run('apt-get install --force-yes -y %(project)s-img %(project)s-be %(project)s-fe %(project)s-config' % {
+	    "project" : project
 	    })
 
 
