@@ -267,12 +267,16 @@ def install_production_packages(options):
 @task
 @cmdopts([
     ('preproduction-machine=', 'r', 'Preproduction machine'),
-    ('unwanted-packages=', 'n', 'Unwanted packages')
+    ('unwanted-packages=', 'n', 'Unwanted packages'),
+    ('section-packages=', 's', 'Enabled packages section'),
+    ('disable-urls=', 'l', 'Disable urls for debian repo')
 ])
 @needs('install_production_packages')
 def execute_diff_packages(options):
     preproduction_machine = getattr(options, "preproduction_machine")
-    unwanted_packages = getattr(options, "unwanted_packages", "mypage;ella")
+    unwanted_packages = getattr(options, "unwanted_packages", '')
+    section_packages = getattr(options, "section_packages", ".*")
+    disable_urls = getattr(options, "disable_urls", '')
     fabfile_name = getattr(options, "fabfile_name", '')
     # import your fabfile
     if fabfile_name != '':
@@ -280,7 +284,7 @@ def execute_diff_packages(options):
     else:
         fabfile = import_fabfile()
     # invoke fabric task
-    args = (options.packages_list, unwanted_packages)
+    args = (options.packages_list, unwanted_packages, section_packages, disable_urls)
     options.diff_packages_list = fab(preproduction_machine, 
 				 fabfile['execute_diff_packages'], 
 				 resolve,

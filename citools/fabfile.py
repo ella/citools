@@ -22,14 +22,6 @@ URL = "localapt.centrum.cz"
 LDIR = "/var/cache/apt/archives/"
 RDIR = "lenny/apps/centrum-%s-all" % (PROJECT,)
 
-#This is the tuple of url from repo for packages that not be in diff dpkg -l 
-DISABLE_URL = (
-	      "http://debian.repo.chservices.cz",
-	      "http://security.repo.chservices.cz",
-	      "http://apt.repo.chservices.cz",
-	      "http://backports.repo.chservices.cz",
-)
-
 def download_diff_packages(diff_packages_list, project, project_version='', project_only='no'):
     """
     This function install projet and download packages from diff list 
@@ -306,13 +298,13 @@ def install_project(project, project_version=''):
 	    })
 
 
-def execute_diff_packages(packages_list, unwanted_packages='mypage;ella'):
+def execute_diff_packages(packages_list, unwanted_packages='', section='.*', disable_urls=''):
     """
     This function execute diff preproduction and production dpkg -l list and remove packages from diff that are in standard debian repository
     it is running on preproduction machine
     """
     DIFF_PACKAGES_LIST = execute_diff(packages_list)
-    DIFF_PACKAGES_LIST = clean_diff(DIFF_PACKAGES_LIST, unwanted_packages)
+    DIFF_PACKAGES_LIST = clean_diff(DIFF_PACKAGES_LIST, unwanted_packages, section, disable_urls)
 
     return DIFF_PACKAGES_LIST
 
@@ -334,10 +326,16 @@ def execute_diff(packages_list):
 
     return DIFF_PACKAGES_LIST
 
-def clean_diff(diff_packages_list, unwanted_packages):
+def clean_diff(diff_packages_list, unwanted_packages, section, disable_urls):
     """
-    This function remove packages from diff that are in standard debian repository 
+    This function remove packages from diff that are from standard debian repository
+    and are given by param disable_urls and section of packages
     """
+    
+    if not disable_urls:
+        DISABLE_URLS = []
+    else:
+        DISABLE_URLS = disable_urls.split(";")
     
     DIFF_PACKAGES_LIST = diff_packages_list
     # remove unwanted packages
@@ -352,8 +350,8 @@ def clean_diff(diff_packages_list, unwanted_packages):
     for record in DIFF_PACKAGES_LIST:
         if record in delete_records:
             continue
-        urls = run("apt-cache policy %s | grep 'http://.*[ ].*/content' | sed 's/ \{2,\}//'" % (DIFF_PACKAGES_LIST[record][0]))
-        if urls == "" or urls == None:
+        urls = run("apt-cache policy %s | grep 'http://.*[ ].*/%s' | sed 's/ \{2,\}//'" % (DIFF_PACKAGES_LIST[record][0], section))
+        if not urls:
             delete_records.append(record)
             continue
         if string.find(urls, "E: Cache is out of sync") != -1:
@@ -367,7 +365,7 @@ def clean_diff(diff_packages_list, unwanted_packages):
                 url = string.split(url, " ")[1]
             except IndexError:
                 continue
-            if url in DISABLE_URL:
+            if url in DISABLE_URLS:
                 disable_url = disable_url + 1
             else:
                 enable_url = enable_url + 1
