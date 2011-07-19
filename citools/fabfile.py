@@ -195,7 +195,7 @@ def install_production_packages(clean_machine, production_machine, production_ba
         sys_info = run("uname -a")
         sys_info = string.split(sys_info, " ")
         architecture = sys_info[-2]
-        if architecture not in enabled_architecture.split(";"):
+        if architecture not in enabled_architectures.split(";"):
             print "\nUnsupported architecture\n" 
             sys.exit(1)
     
