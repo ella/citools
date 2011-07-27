@@ -30,6 +30,15 @@ def compute_version(string):
 
     version = match.groupdict()['arch']
 
+    # if bordel ends with digit numbers, they should be part of <arch>
+    if match.groupdict().has_key('bordel') and match.groupdict()['bordel']:
+        i = 0
+        bordel = match.groupdict()['bordel']
+        while re.match("\d", bordel[~i]) and i < len(bordel):
+            version = bordel[~i] + version
+            i +=1
+
+
     if match.groupdict().has_key('rest') and match.groupdict()['rest']:
         staging = re.findall("(\.\d+)", match.groupdict()['rest'])
         version = ''.join([version]+staging)

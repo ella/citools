@@ -32,6 +32,9 @@ class TestVersioning(TestCase):
     def test_on_tag_with_suffix(self):
         self.assertEquals((0, 7, 0), compute_version('0.7-our-tools-project'))
 
+    def test_after_tag_twodigit(self):
+        self.assertEquals((234, 7, 20), compute_version('tools-234.7-20-g1754c3f'))
+
     def test_first_release_tag(self):
         self.assertEquals((0, 0, 1), compute_version('0.0'))
 
