@@ -1,15 +1,23 @@
-from operator import or_
 from pyparsing import (
         ParserElement, LineEnd, CharsNotIn, Group, Word,
         alphanums, Literal, Combine, ZeroOrMore, nums,
         Optional, delimitedList, restOfLine,
-        Or)
+        Or, _ustr, MatchFirst
+)
 from itertools import chain
+
+
+DEPENDENCY_DELIMITERS = PROVIDES_DELIMITERS = [',']
+DEPENDENCY_INTERLIMITERS = ['|']
 
 class ControlFileParagraph(dict):
     def __init__(self, source):
+        self.provides_delimiters = self.dependency_delimiters = DEPENDENCY_DELIMITERS
+        self.dependency_interlimiters = DEPENDENCY_INTERLIMITERS
+
         self._keys = []
         self._parse(source)
+        
         super(ControlFileParagraph, self).__init__()
 
     def _parse_items(self, source):
@@ -150,14 +158,36 @@ class PackageParagraph(ControlFileParagraph):
                     package_name
                 )
             ).setParseAction(lambda x: get_dependency(x.name, x.sign, x.version))
-        dependencies = Optional(delimitedList(dependency, ','))
+
+        delim = MatchFirst([])
+        for i in self.dependency_delimiters + self.dependency_interlimiters:
+            delim = delim | Literal(i)
+            
+        dlName = _ustr(dependency)+" ["+_ustr(delim)+" "+_ustr(dependency)+"]..."
+        dependencies = Optional((dependency + ZeroOrMore(delim + dependency)).setName(dlName))
+
         return dependencies.parseString(value, True).asList()
 
     def dump_depends(self, value):
-        return ', '.join(map(str, value))
+        out = ''
+        for v in value:
+            if v in self.dependency_delimiters:
+                out += '%s ' % v
+            elif v in self.dependency_interlimiters:
+                out += ' %s ' % v
+            else:
+                out += str(v)
+
+        return out
 
     def dump_provides(self, value):
-        return ', '.join(map(str, value))
+        out = ''
+        for v in value:
+            if v in self.provides_delimiters:
+                out += '%s ' % v
+            else:
+                out += str(v)
+        return out
 
 class ControlFile(object):
     DEFAULT_SOURCE_PARAGRAPH = """Section: python
@@ -197,10 +227,10 @@ Depends: python (>= 2.5.0)
         return package
 
     def get_dependencies(self):
-        return chain(*(p.get('depends', []) for p in self.packages))
+        return chain(*([i for i in p.get('depends', []) if i not in DEPENDENCY_DELIMITERS+DEPENDENCY_INTERLIMITERS] for p in self.packages))
 
     def get_provides(self):
-        return chain(*(p.get('provides', []) for p in self.packages))
+        return chain(*([i for i in p.get('provides', []) if i not in PROVIDES_DELIMITERS] for p in self.packages))
 
     def get_versioned_dependencies(self):
         return [d for d in self.get_dependencies() if d.is_versioned()]

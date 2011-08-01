@@ -300,6 +300,24 @@ Description: package with static files with versioned path
     cfile = ControlFile(dc)
     assert_equals([l.strip() for l in dc.splitlines()], [l.strip() for l in cfile.dump().splitlines()])
 
+def test_control_file_dumped_properly_with_or_dependency():
+    debian_control = '''\
+Source: package-with-static-files
+Section: python
+Priority: optional
+Maintainer: John Doe <john@doe.com>
+Standards-Version: 3.7.2
+
+Package: package-with-static-files
+Architecture: all
+Depends: package (>= 1.0) | custom-build-package (> 1.0)
+Description: package with static files without version in path
+'''
+
+    cfile = ControlFile(debian_control)
+    assert_equals([l.strip() for l in debian_control.splitlines()], [l.strip() for l in cfile.dump().splitlines()])
+
+
 def test_upgrade_to_multicipher_version_passes_downgrade_check():
     cfile = ControlFile()
     assert_true(cfile.check_downgrade('0.5.0.0', '0.17.0.114'))
