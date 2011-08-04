@@ -4,6 +4,7 @@ then do diff and send residual packages to production repo and instal project yo
 Using by paver call: paver upload_packages -p production_machine -c clean_machine -j project -r preproduction -d domain user name
 Example upload_packages -p hp9fe1 -c root@cnt-insttester-michal-splachovator.dev.chservices.cz -j centrum-mypage-auto -r root@cms-hp9fe.dev.chservices.cz -d name.surname 
 """
+import re
 import sys
 import string
 import urllib
@@ -22,33 +23,11 @@ URL = "localapt.centrum.cz"
 LDIR = "/var/cache/apt/archives/"
 RDIR = "lenny/apps/centrum-%s-all" % (PROJECT,)
 
-def download_diff_packages(diff_packages_list, project, project_version='', project_only='no'):
+def basic_selection_packages(ls_out):
     """
-    This function install projet and download packages from diff list 
+    This function provides basic prompt for selecting packages for upload,
+    prompt uses names of packages for selecting
     """
-    try:
-        run('rm /var/cache/apt/archives/*.deb')
-    except:
-        print "\nwarning: can not remove non-existent files or directory\n"
-    
-    install_project(project, project_version)
-    
-    DIFF_PACKAGES_LIST = diff_packages_list
-    download_packages = ""
-
-    for record_key in DIFF_PACKAGES_LIST:
-        package, version = DIFF_PACKAGES_LIST[record_key]
-        if version != None:
-            download_packages = download_packages + " %s=%s" % (package,version)
-        else:
-            download_packages = download_packages + " %s" % (package,)
-    if project_only == 'no':
-        output = run('apt-get install --force-yes -y --download-only%s' % (download_packages,))
-
-    ls_out = run("ls /var/cache/apt/archives/ | grep '.deb'")
-    
-    ls_out = string.replace(ls_out, "\r", "")
-    ls_out = string.split(ls_out, "\n")
     
     while True:
         print "\n"
@@ -86,6 +65,133 @@ def download_diff_packages(diff_packages_list, project, project_version='', proj
         else:
             print "\nW: Spatna volba"
             continue
+        
+    return ls_out
+
+def advanced_selection_packages(ls_out):
+    """
+    This function provides advanced prompt for selecting packages for upload,
+    prompt uses list-like indexes and slices for selecting
+    """
+    reg_expr_all = re.compile(r"(?P<first_index>(-)?\d+)"
+                   r"(?P<colon>:)"
+                   r"(?P<second_index>(-)?\d+)"
+            )
+    reg_expr_left = re.compile(r"(?P<first_index>(-)?\d+)"
+                   r"(?P<colon>:)"
+            )
+    reg_expr_right = re.compile(r"(?P<colon>:)"
+                   r"(?P<second_index>(-)?\d+)"
+            )
+    reg_expr_one = re.compile(r"(?P<first_index>(-)?\d+)")
+    
+    while True:
+        ls_out.sort()
+        print "\n"
+        for ind, package in enumerate(ls_out):
+            print "%s: %s" % (ind, package)
+        print "\nbalicky jsou stazene ve /var/cache/apt/archives/\n"
+        
+        answer = raw_input('Chces uploadnout tyto baliky, oznacit baliky k odebrani, oznacit baliky k uploadu, neuploadovat (y/d/c/n): ')
+        if answer == 'y':
+            break
+        elif answer == 'd':
+            indexes = raw_input('zadej indexy baliku (nebo rozsahy napr. 5:9) oddelene strednikem: ')
+            indexes = string.split(indexes, ";")
+            ls_out_remove = []
+            error = False
+            for index in indexes:
+                try:
+                    if reg_expr_all.match(index):
+                        reg_output = reg_expr_all.match(index)
+                        ls_out_remove.extend(ls_out[int(reg_output.group('first_index')):int(reg_output.group('second_index'))])
+                    elif reg_expr_right.match(index):
+                        reg_output = reg_expr_right.match(index)
+                        ls_out_remove.extend(ls_out[:int(reg_output.group('second_index'))])
+                    elif reg_expr_left.match(index):
+                        reg_output = reg_expr_left.match(index)
+                        ls_out_remove.extend(ls_out[int(reg_output.group('first_index')):])
+                    elif reg_expr_one.match(index):
+                        reg_output = reg_expr_one.match(index)
+                        ls_out_remove.append(ls_out[int(reg_output.group('first_index'))])
+                    else:
+                        raise IndexError
+                    
+                except (IndexError, ValueError, TypeError):
+                    print "\nW: Spatne zadane cisla/rozsahy baliku"
+                    error = True
+                    break
+            if not error:
+                ls_out = list(set(ls_out) - set(ls_out_remove))
+        elif answer == 'c':
+            indexes = raw_input('zadej indexy baliku (nebo rozsahy napr. 5:9) oddelene strednikem: ')
+            indexes = string.split(indexes, ";")
+            ls_out_upload = []
+            error = False
+            for index in indexes:
+                try:
+                    if reg_expr_all.match(index):
+                        reg_output = reg_expr_all.match(index)
+                        ls_out_upload.extend(ls_out[int(reg_output.group('first_index')):int(reg_output.group('second_index'))])
+                    elif reg_expr_right.match(index):
+                        reg_output = reg_expr_right.match(index)
+                        ls_out_upload.extend(ls_out[:int(reg_output.group('second_index'))])
+                    elif reg_expr_left.match(index):
+                        reg_output = reg_expr_left.match(index)
+                        ls_out_upload.extend(ls_out[int(reg_output.group('first_index')):])
+                    elif reg_expr_one.match(index):
+                        reg_output = reg_expr_one.match(index)
+                        ls_out_upload.append(ls_out[int(reg_output.group('first_index'))])
+                    else:
+                        raise IndexError
+                    
+                except (IndexError, ValueError, TypeError):
+                    print "\nW: Spatne zadane cisla/rozsahy baliku"
+                    error = True
+                    break
+            if not error:
+                ls_out = ls_out_upload
+        elif answer == 'n':
+            print "\nEXIT: Baliky nebudou uploadnuty\n"
+            sys.exit(1)
+        else:
+            print "\nW: Spatna volba"
+            continue
+        
+    return ls_out
+
+def download_diff_packages(diff_packages_list, project, project_version='', project_only='no', prompt_type='b'):
+    """
+    This function install projet and download packages from diff list 
+    """
+    try:
+        run('rm /var/cache/apt/archives/*.deb')
+    except:
+        print "\nwarning: can not remove non-existent files or directory\n"
+    
+    install_project(project, project_version)
+    
+    DIFF_PACKAGES_LIST = diff_packages_list
+    download_packages = ""
+
+    for record_key in DIFF_PACKAGES_LIST:
+        package, version = DIFF_PACKAGES_LIST[record_key]
+        if version != None:
+            download_packages = download_packages + " %s=%s" % (package,version)
+        else:
+            download_packages = download_packages + " %s" % (package,)
+    if project_only == 'no':
+        output = run('apt-get install --force-yes -y --download-only%s' % (download_packages,))
+
+    ls_out = run("ls /var/cache/apt/archives/ | grep '.deb'")
+    
+    ls_out = string.replace(ls_out, "\r", "")
+    ls_out = string.split(ls_out, "\n")
+    
+    if prompt_type == 'b':
+        ls_out = basic_selection_packages(ls_out)
+    else:
+        ls_out = advanced_selection_packages(ls_out)
     
     return ls_out
 
@@ -343,7 +449,8 @@ def clean_diff(diff_packages_list, unwanted_packages, section, disable_urls):
     for record in DIFF_PACKAGES_LIST:
         for element in unwanted_records:
             if string.find(record, element) != -1:
-                delete_records.append(record)
+                if record not in delete_records:
+                    delete_records.append(record)
 
     # remove packages from standard debian repository
     for record in DIFF_PACKAGES_LIST:

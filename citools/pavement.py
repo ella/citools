@@ -298,7 +298,8 @@ def execute_diff_packages(options):
 @cmdopts([
     ('project=', 'j', 'Project'),
     ('project-version=', 'v', 'Project version'),
-    ('project-only=', 'o', 'Project packages only')
+    ('project-only=', 'o', 'Project packages only'),
+    ('prompt-type=', 'e', 'Type of prompt for selecting packages')
 ])
 @needs('execute_diff_packages')
 def download_diff_packages(options):
@@ -306,6 +307,7 @@ def download_diff_packages(options):
     project = getattr(options, "project")
     project_version = getattr(options, "project_version", '')
     project_only = getattr(options, "project_only", 'no')
+    prompt_type = getattr(options, "prompt_type", 'b')
     fabfile_name = getattr(options, "fabfile_name", '')
     # import your fabfile
     if fabfile_name != '':
@@ -313,7 +315,7 @@ def download_diff_packages(options):
     else:
         fabfile = import_fabfile()
     # invoke fabric task
-    args = (options.diff_packages_list, project, project_version, project_only)
+    args = (options.diff_packages_list, project, project_version, project_only, prompt_type)
     options.packages_for_upload = fab(clean_machine, 
 				 fabfile['download_diff_packages'], 
 				 resolve,
