@@ -160,7 +160,7 @@ def advanced_selection_packages(ls_out):
         
     return ls_out
 
-def download_diff_packages(diff_packages_list, project, project_version='', project_only='no', prompt_type='b'):
+def download_diff_packages(diff_packages_list, project, project_version='', project_config=True, project_only='no', prompt_type='b'):
     """
     This function install projet and download packages from diff list 
     """
@@ -169,7 +169,7 @@ def download_diff_packages(diff_packages_list, project, project_version='', proj
     except:
         print "\nwarning: can not remove non-existent files or directory\n"
     
-    install_project(project, project_version)
+    install_project(project, project_version, project_config)
     
     DIFF_PACKAGES_LIST = diff_packages_list
     download_packages = ""
@@ -306,21 +306,24 @@ def install_production_packages(clean_machine, production_machine, production_ba
             sys.exit(1)
     
     run("apt-get update")
-    
-    dpkgl_file = urllib.urlopen('http://cml.tunel.chservices.cz/cgi-bin/dpkg.pl?host=%s' % (production_machine,))
-    PACKAGES_LIST = getlistpackages(dpkgl_file)
-    if production_backend_machine:
-        dpkgl_file = urllib.urlopen('http://cml.tunel.chservices.cz/cgi-bin/dpkg.pl?host=%s' % (production_backend_machine,))
-        backend_packages_list = getlistpackages(dpkgl_file)
-        backend_packages_list.update(PACKAGES_LIST)
-        PACKAGES_LIST = backend_packages_list 
-
+    if production_machine:
+        dpkgl_file = urllib.urlopen('http://cml.tunel.chservices.cz/cgi-bin/dpkg.pl?host=%s' % (production_machine,))
+        PACKAGES_LIST = getlistpackages(dpkgl_file)
+        if production_backend_machine:
+            dpkgl_file = urllib.urlopen('http://cml.tunel.chservices.cz/cgi-bin/dpkg.pl?host=%s' % (production_backend_machine,))
+            backend_packages_list = getlistpackages(dpkgl_file)
+            backend_packages_list.update(PACKAGES_LIST)
+            PACKAGES_LIST = backend_packages_list 
+    else:
+	PACKAGES_LIST = {}
     client = paramiko.SSHClient()
     client.load_system_host_keys()
     clean_machine = string.split(clean_machine, "@")
     client.connect(clean_machine[1],  username=clean_machine[0])
     local_list = {}
     local_list.update(PACKAGES_LIST)
+    if len(PACKAGES_LIST) == 0:
+        return PACKAGES_LIST
     while True:
         install_packages = ""
         for key in local_list:
@@ -387,19 +390,28 @@ def install_production_packages(clean_machine, production_machine, production_ba
     return PACKAGES_LIST
 
 
-def install_project(project, project_version=''):
+def install_project(project, project_version='', config=True):
     """
     This function take -be, -fe, -img for given project, if the version is not given we get the latest version from devel repository
     """
-     
+    
+    if config:
+        project_config = "%s-config" % (project,)
+    else:
+        project_config = ''
+
     if project_version != '':
-        run('apt-get install --force-yes -y %(project)s-img=%(project_version)s %(project)s-be=%(project_version)s %(project)s-fe=%(project_version)s %(project)s-config=%(project_version)s' % {
+	if config:
+	    project_config = "%s=%s" % (project_config, project_version)
+        run('apt-get install --force-yes -y %(project)s-img=%(project_version)s %(project)s-be=%(project_version)s %(project)s-fe=%(project_version)s %(project_config)s' % {
 	    "project" : project, 
-	    "project_version" : project_version
+	    "project_version" : project_version,
+            "project_config" : project_config
 	    })
     else:
-        run('apt-get install --force-yes -y %(project)s-img %(project)s-be %(project)s-fe %(project)s-config' % {
-	    "project" : project
+        run('apt-get install --force-yes -y %(project)s-img %(project)s-be %(project)s-fe %(project_config)s python-support=1.0.3~bpo50+1' % {
+	    "project" : project,
+            "project_config" : project_config
 	    })
 
 
@@ -420,7 +432,7 @@ def execute_diff(packages_list):
     DIFF_PACKAGES_LIST = {}
     PACKAGES_LIST = packages_list
 
-    local_dpkgl = run("dpkg -l | grep '^ii  ' | sed 's/^ii  //' | sed 's/ \{2,\}/;/g'")
+    local_dpkgl = run("dpkg -l | grep '^ii  ' | sed 's/^ii  //' | sed 's/ \{1,\}/;/g'")
     packages_list_local = getlistpackageslocal(local_dpkgl)
     
     for record in packages_list_local:
