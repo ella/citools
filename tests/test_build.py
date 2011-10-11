@@ -3,13 +3,12 @@ import os
 from shutil import rmtree
 from subprocess import check_call, PIPE
 from tempfile import mkdtemp
-from unittest import TestCase
 
 from nose.tools import assert_equals, assert_true
 
 from citools.build import copy_images, replace_template_files, rename_template_files
 
-from helpers import GitTestCase, BuildTestCase
+from helpers import BuildTestCase
 
 class TestCopyImages(object):
 
