@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-import os
 import sys
-from os.path import abspath, dirname
+from os.path import abspath, dirname, join
 
 from paver.easy import *
 from paver.setuputils import setup
@@ -118,9 +117,9 @@ def bootstrap():
 
     print '*'*80
     if sys.platform in ('win32', 'winnt'):
-        print "* Before running other commands, You now *must* run %s" % os.path.join("bin", "activate.bat")
+        print "* Before running other commands, You now *must* run %s" % join("bin", "activate.bat")
     else:
-        print "* Before running other commands, You now *must* run source %s" % os.path.join("bin", "activate")
+        print "* Before running other commands, You now *must* run source %s" % join("bin", "activate")
     print '*'*80
 
 @task
@@ -128,4 +127,3 @@ def bootstrap():
 def prepare():
     """ Prepare complete environment """
     sh("python setup.py develop")
-

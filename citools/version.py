@@ -285,6 +285,29 @@ def get_git_head_hash(fix_environment=False, repository_directory=None):
             else:
                 del os.environ['GIT_DIR']
 
+def get_git_head_tstamp(fix_environment=False, repository_directory=None):
+    """ return timestamp of last commit on current branch """
+    if fix_environment:
+        if not repository_directory:
+            raise ValueError("Cannot fix environment when repository directory not given")
+        env_git_dir = os.environ.get('GIT_DIR', None)
+        os.environ['GIT_DIR'] = os.path.join(repository_directory, '.git')
+
+    try:
+        proc = Popen(["git", "log", "-n1", "--pretty=format:%at"], stdout=PIPE)
+        return_code = proc.wait()
+        if return_code == 0:
+            return proc.stdout.read().strip()
+        else:
+            raise ValueError("Non-zero return code %s from git log" % return_code)
+
+    finally:
+        if fix_environment:
+            if env_git_dir:
+                os.environ['GIT_DIR'] = env_git_dir
+            else:
+                del os.environ['GIT_DIR']
+
 
 def replace_init(version, name):
     """ Update VERSION attribute in $name/__init__.py module """

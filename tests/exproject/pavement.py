@@ -1,5 +1,4 @@
-from os import chdir
-from os.path import join, abspath, dirname
+from os.path import abspath, dirname
 
 from paver.easy import *
 from paver.setuputils import setup
