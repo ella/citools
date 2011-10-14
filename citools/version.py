@@ -83,6 +83,14 @@ def sum_versions(version1, version2):
     return tuple(final_version)
 
 
+def get_git_last_hash(commit="HEAD"):
+    p = Popen(["git", "rev-parse", commit], stdout=PIPE, stderr=PIPE)
+    stdout = p.communicate()[0]
+    if p.returncode == 0:
+        return stdout.strip()
+    else:
+        return ''
+
 def get_git_revlist_tags(commit="HEAD"):
     p = Popen(["git", "rev-list", "--simplify-by-decoration", "--pretty=format:%d", commit], stdout=PIPE, stderr=PIPE)
     stdout = p.communicate()[0]

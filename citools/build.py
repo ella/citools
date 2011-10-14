@@ -7,10 +7,13 @@ from distutils.errors import DistutilsSetupError
 from itertools import chain
 import logging
 import os
+import calendar
+import time
+from datetime import datetime
 from shutil import copytree
 
 from citools.git import fetch_repository
-from citools.version import retrieve_current_branch
+from citools.version import retrieve_current_branch, get_git_last_hash
 
 logger = logging.getLogger(__name__)
 
@@ -118,9 +121,36 @@ def rename_template_files(root_directory, variables=None, subdirs=None):
                 
                 os.rename(fp, os.path.join(os.path.join(root_directory, dir, newname)))
 
+def _get_now_date_rfc():
+    now_date = datetime.now()
+    time_zone = str(time.timezone)
+    if time_zone[0] == "-":
+        sign = "-"
+    else:
+        sign = "+"
+    time_zone = int(time_zone[1:])
+    time_zone_hour = time_zone / 3600
+    time_zone_minutes = (time_zone % 3600) / 60
+    now_date = "%s, %02d %s %s %02d:%02d:%02d %s%02d%02d" % (
+        calendar.day_name[now_date.weekday()][0:3],
+        now_date.day,
+        calendar.month_name[now_date.month][0:3],
+        now_date.year,
+        now_date.hour,
+        now_date.minute,
+        now_date.second,
+        sign,
+        time_zone_hour,
+        time_zone_minutes
+    )
+    
+    return now_date
+
 def get_common_variables(distribution):
     variables = {
-        'version' : distribution.version if hasattr(distribution, "version") and distribution.version else distribution.get_version()
+        'version' : distribution.version if hasattr(distribution, "version") and distribution.version else distribution.get_version(),
+        'build_date' : _get_now_date_rfc(),
+        'revision_key' : get_git_last_hash()     
     }
 
     probe = getattr(distribution.metadata, "template_attributes", [
