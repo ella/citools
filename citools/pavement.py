@@ -121,21 +121,8 @@ def bump():
 @task
 @cmdopts([
     ('accepted-tag-pattern=', 't', 'Tag pattern passed to git describe for version recognition'),
-    ('datetime-mode', 'd', 'Version is set by last commit datetime'),
 ])
 def compute_version_git(options):
-    if not getattr(options, 'datetime_mode', False):
-        print compute_version_git_number(options)
-    else:
-        from citools.version import get_git_head_tstamp
-
-        tstamp = int(get_git_head_tstamp())
-        if not tstamp:
-            raise Exception("Git log parsing error")
-        commit_dtime = datetime.fromtimestamp(tstamp)
-        print commit_dtime.strftime("%Y-%m-%d-%H%M")
-
-def compute_version_git_number(options):
     from citools.version import get_git_describe, compute_version, get_branch_suffix, retrieve_current_branch
     if not getattr(options, "accepted_tag_pattern", None):
         options.accepted_tag_pattern = "%s-[0-9]*" % options.name
@@ -150,7 +137,27 @@ def compute_version_git_number(options):
 
     dist.metadata.branch_suffix = options.branch_suffix = branch_suffix
 
-    return options.version_str
+    print options.version_str
+
+@task
+def compute_version_git_datetime(options):
+    from citools.version import get_git_head_tstamp, get_branch_suffix, retrieve_current_branch
+
+    tstamp = int(get_git_head_tstamp())
+    if not tstamp:
+        raise Exception("Git log parsing error")
+    commit_dtime = datetime.fromtimestamp(tstamp)
+    commit_version = commit_dtime.strftime("%Y.%m.%d.%H%M")#.split('.')
+
+    dist = _get_distribution()
+    branch_suffix = get_branch_suffix(dist.metadata, retrieve_current_branch())
+
+    options.version = commit_version
+    dist.metadata.version = commit_version
+
+    dist.metadata.branch_suffix = options.branch_suffix = branch_suffix
+
+    print options.version
 
 @task
 @needs('compute_version_git')
